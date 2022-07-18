@@ -1,179 +1,162 @@
 import * as React from 'react';
-import { styled, createTheme, ThemeProvider } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import MuiDrawer from '@mui/material/Drawer';
+import { useState, useEffect } from 'react';
+import { createTheme, ThemeProvider } from '@mui/material/styles';
+
 import Box from '@mui/material/Box';
-import MuiAppBar from '@mui/material/AppBar';
+import Drawer from '@mui/material/Drawer';
+import CssBaseline from '@mui/material/CssBaseline';
+import AppBar from '@mui/material/AppBar';
 import Toolbar from '@mui/material/Toolbar';
 import List from '@mui/material/List';
 import Typography from '@mui/material/Typography';
 import Divider from '@mui/material/Divider';
-import IconButton from '@mui/material/IconButton';
-import Badge from '@mui/material/Badge';
-import Container from '@mui/material/Container';
-import Grid from '@mui/material/Grid';
-import Paper from '@mui/material/Paper';
-import Link from '@mui/material/Link';
-import MenuIcon from '@mui/icons-material/Menu';
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
-import NotificationsIcon from '@mui/icons-material/Notifications';
-import { Button } from '@mui/material';
+import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import ListItemText from '@mui/material/ListItemText';
+import useMediaQuery from '@mui/system';
 
-function Copyright(props) {
-  return (
-    <Typography
-      variant="body2"
-      color="text.secondary"
-      align="center"
-      {...props}
-    >
-      {'Copyright © '}
-      <Link color="inherit" href="https://mui.com/">
-        Your Website
-      </Link>{' '}
-      {new Date().getFullYear()}
-      {'.'}
-    </Typography>
-  );
-}
+import HomeIcon from '@mui/icons-material/Home';
+import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
+import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
+import SettingsIcon from '@mui/icons-material/Settings';
+import KeyIcon from '@mui/icons-material/Key';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
+import { IconButton } from '@mui/material';
 
 const drawerWidth = 240;
 
-const AppBar = styled(MuiAppBar, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-  zIndex: theme.zIndex.drawer + 1,
-  transition: theme.transitions.create(['width', 'margin'], {
-    easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen,
-  }),
-  ...(open && {
-    marginLeft: drawerWidth,
-    width: `calc(100% - ${drawerWidth}px)`,
-    transition: theme.transitions.create(['width', 'margin'], {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-  }),
-}));
-
-const Drawer = styled(MuiDrawer, {
-  shouldForwardProp: (prop) => prop !== 'open',
-})(({ theme, open }) => ({
-  '& .MuiDrawer-paper': {
-    position: 'relative',
-    whiteSpace: 'nowrap',
-    width: drawerWidth,
-    transition: theme.transitions.create('width', {
-      easing: theme.transitions.easing.sharp,
-      duration: theme.transitions.duration.enteringScreen,
-    }),
-    boxSizing: 'border-box',
-    ...(!open && {
-      overflowX: 'hidden',
-      transition: theme.transitions.create('width', {
-        easing: theme.transitions.easing.sharp,
-        duration: theme.transitions.duration.leavingScreen,
-      }),
-      width: theme.spacing(7),
-      [theme.breakpoints.up('sm')]: {
-        width: theme.spacing(9),
-      },
-    }),
-  },
-}));
-
-const mdTheme = createTheme();
+const iconindex = {
+  Home: <HomeIcon />,
+  Library: <LibraryMusicIcon />,
+  Playlists: <FeaturedPlayListIcon />,
+  Settings: <SettingsIcon />,
+};
 
 function App() {
-  const [open, setOpen] = React.useState(true);
-  const toggleDrawer = () => {
-    setOpen(!open);
-  };
+  const [activePage, setActivePage] = useState(0);
 
+  if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
+    console.log('🎉 Dark mode is supported');
+  }
+
+  const MediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+  let activeTheme;
+
+  if (MediaQuery.matches) {
+    console.log('🎉 Dark mode is preferred');
+    activeTheme = createTheme({
+      palette: {
+        mode: 'dark',
+      },
+    });
+  } else {
+    console.log('🎉 Light mode is preferred');
+    activeTheme = createTheme({
+      palette: {
+        mode: 'light',
+      },
+    });
+  }
+
+  console.log('Theme');
+  console.log(activeTheme);
+
+  function isHidden(id) {
+    if (activePage === id) {
+      return false;
+    }
+    return true;
+  }
   return (
-    <ThemeProvider theme={mdTheme}>
-      <Box sx={{ display: 'flex' }}>
+    <ThemeProvider theme={activeTheme}>
+      <Box sx={{ display: 'flex', bgcolor: 'primary.main' }}>
         <CssBaseline />
-        <AppBar position="absolute" open={open}>
-          <Toolbar
-            sx={{
-              pr: '24px', // keep right padding when drawer closed
-            }}
-          >
-            <IconButton
-              edge="start"
-              color="inherit"
-              aria-label="open drawer"
-              onClick={toggleDrawer}
-              sx={{
-                marginRight: '36px',
-                ...(open && { display: 'none' }),
-              }}
-            >
-              <MenuIcon />
-            </IconButton>
-            <Typography
-              component="h1"
-              variant="h6"
-              color="inherit"
-              noWrap
-              sx={{ flexGrow: 1 }}
-            >
-              Dashboard
-            </Typography>
-            <IconButton color="inherit">
-              <Badge badgeContent={4} color="secondary">
-                <NotificationsIcon />
-              </Badge>
-            </IconButton>
-          </Toolbar>
-        </AppBar>
-        <Drawer variant="permanent" open={open}>
-          <Toolbar
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              px: [1],
-            }}
-          >
-            <IconButton onClick={toggleDrawer}>
-              <ChevronLeftIcon />
-            </IconButton>
-          </Toolbar>
-          <Divider />
-          <Grid container direction={'column'} spacing={3}>
-            <Grid item xs={12}>
-              <Button>Home</Button>
-            </Grid>
-            <Grid item xs={12}>
-              <Button>Home</Button>
-            </Grid>
-            <Grid item xs={12}>
-              <Button>Home</Button>
-            </Grid>
-            <Grid item xs={12}>
-              <Button>Home</Button>
-            </Grid>
-          </Grid>
-        </Drawer>
-        <Box
-          component="main"
+        <AppBar
+          position="fixed"
           sx={{
-            backgroundColor: (theme) =>
-              theme.palette.mode === 'light'
-                ? theme.palette.grey[100]
-                : theme.palette.grey[900],
-            flexGrow: 1,
-            height: '100vh',
-            overflow: 'auto',
+            width: `calc(100% - ${drawerWidth}px)`,
+            ml: `${drawerWidth}px`,
           }}
         >
+          <Toolbar>
+            <Box></Box>
+          </Toolbar>
+        </AppBar>
+        <Drawer
+          sx={{
+            width: drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: drawerWidth,
+              boxSizing: 'border-box',
+            },
+          }}
+          variant="permanent"
+          anchor="left"
+        >
+          <Toolbar>
+            <Typography variant="h4" sx={{ flexGrow: 1 }} component="div">
+              Warden
+            </Typography>
+          </Toolbar>
+          <Divider />
+          <List>
+            {['Home', 'Library', 'Playlists', 'Settings'].map((text, index) => (
+              <ListItem key={text} disablePadding>
+                <ListItemButton onClick={() => setActivePage(index)}>
+                  <ListItemIcon>{iconindex[text]}</ListItemIcon>
+                  <ListItemText primary={text} />
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Drawer>
+        <Box
+          hidden={isHidden(0)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Home"
+        >
           <Toolbar />
-          <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-            <Grid container spacing={3}></Grid>
-          </Container>
+          <Typography paragraph>
+            This will be the Home page of my App
+          </Typography>
+        </Box>
+        <Box
+          hidden={isHidden(1)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Library"
+        >
+          <Toolbar />
+          <Typography paragraph>
+            This will be the Library page of my App
+          </Typography>
+        </Box>
+        <Box
+          hidden={isHidden(2)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Playlists"
+        >
+          <Toolbar />
+          <Typography paragraph>
+            This will be the Playlists page of my App
+          </Typography>
+        </Box>
+        <Box
+          hidden={isHidden(3)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Settings"
+        >
+          <Toolbar />
+          <Typography paragraph>
+            This will be the Settings page of my App
+          </Typography>
         </Box>
       </Box>
     </ThemeProvider>
