@@ -15,7 +15,6 @@ import {
   shell,
   ipcMain,
   nativeTheme,
-  protocol,
   dialog,
 } from 'electron';
 import { autoUpdater } from 'electron-updater';
@@ -116,8 +115,8 @@ const createWindow = async () => {
     nativeTheme.themeSource = 'system';
   });
 
-  ipcMain.handle('plex:login', (authData) => {
-    window.open(authData);
+  ipcMain.handle('plex:login', () => {
+    window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIntegration=no')
   });
 
   mainWindow.on('ready-to-show', () => {

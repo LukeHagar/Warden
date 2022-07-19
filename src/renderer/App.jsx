@@ -24,11 +24,13 @@ import KeyIcon from '@mui/icons-material/Key';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
-import { Grid, IconButton, TextField } from '@mui/material';
+import { Button, Grid, IconButton, TextField } from '@mui/material';
 
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import ReactJkMusicPlayer from 'react-jinke-music-player';
+import { PlexOauth, IPlexClientDetails } from 'plex-oauth';
+import { shell } from 'electron';
 
 const drawerWidth = 240;
 
@@ -76,6 +78,49 @@ function App() {
   }
 
   const redirectURL = 'warden-ap://';
+
+  let clientInformation = {
+    clientIdentifier: clientId, // This is a unique identifier used to identify your app with Plex.
+    product: 'Warden', // Name of your application
+    device: 'darwin', // The type of device your application is running on
+    version: '1', // Version of your application
+    forwardUrl: 'http://127.0.0.1:1212', // Url to forward back to after signing in.
+    platform: 'Web', // Optional - Platform your application runs on - Defaults to 'Web'
+  };
+
+  let plexOauth = new PlexOauth(clientInformation);
+
+  // Get hosted UI URL and Pin Id
+  plexOauth
+    .requestHostedLoginURL()
+    .then((data) => {
+      let [hostedUILink, pinId] = data;
+
+      console.log(hostedUILink); // UI URL used to log into Plex
+
+      shell.openExternal(hostedUILink);
+      /*
+       * You can now navigate the user's browser to the 'hostedUILink'. This will include the forward URL
+       * for your application, so when they have finished signing into Plex, they will be redirected back
+       * to the specified URL. From there, you just need to perform a query to check for the auth token.
+       * (See Below)
+       */
+
+      // Check for the auth token, once returning to the application
+      plexOauth
+        .checkForAuthToken(pinId)
+        .then((authToken) => {
+          console.log(authToken); // Returns the auth token if set, otherwise returns null
+
+          // An auth token will only be null if the user never signs into the hosted UI, or you stop checking for a new one before they can log in
+        })
+        .catch((err) => {
+          throw err;
+        });
+    })
+    .catch((err) => {
+      throw err;
+    });
 
   function isHidden(id) {
     if (activePage === id) {
@@ -195,10 +240,14 @@ function App() {
                   type="password"
                 ></TextField>
               </Grid>
+              <Grid item xs={12}>
+                <Button onClick={() => window.plex.login()} variant="outlined">
+                  Login to Plex
+                </Button>
+              </Grid>
             </Grid>
           </Box>
         </Box>
-        <ReactJkMusicPlayer theme="auto" preload spaceBar />
       </Box>
     </ThemeProvider>
   );
