@@ -24,7 +24,11 @@ import KeyIcon from '@mui/icons-material/Key';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
-import { IconButton } from '@mui/material';
+import { Grid, IconButton, TextField } from '@mui/material';
+
+import { v4 as uuidv4 } from 'uuid';
+import axios from 'axios';
+import ReactJkMusicPlayer from 'react-jinke-music-player';
 
 const drawerWidth = 240;
 
@@ -64,11 +68,24 @@ function App() {
   console.log('Theme');
   console.log(activeTheme);
 
+  let clientId = localStorage.getItem('plex-client-id');
+  if (!clientId) {
+    const uuid = uuidv4();
+    localStorage.setItem('plex-client-id', uuid);
+    clientId = uuid;
+  }
+
+  const redirectURL = 'warden-ap://';
+
   function isHidden(id) {
     if (activePage === id) {
       return false;
     }
     return true;
+  }
+
+  function loginHidden() {
+    return false;
   }
   return (
     <ThemeProvider theme={activeTheme}>
@@ -154,10 +171,34 @@ function App() {
           label="Settings"
         >
           <Toolbar />
-          <Typography paragraph>
-            This will be the Settings page of my App
+          <Typography sx={{ flexGrow: 1 }} component="div">
+            Warden Unique Client ID:{clientId}
           </Typography>
+          <Divider />
+          <Box hidden={loginHidden()}>
+            <Grid container spacing={1}>
+              <Grid item xs={12}>
+                <Divider />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  id="plexUsername"
+                  label="Plex Username"
+                  variant="outlined"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  id="plexPassword"
+                  variant="outlined"
+                  label="Plex Password"
+                  type="password"
+                ></TextField>
+              </Grid>
+            </Grid>
+          </Box>
         </Box>
+        <ReactJkMusicPlayer theme="auto" preload spaceBar />
       </Box>
     </ThemeProvider>
   );
