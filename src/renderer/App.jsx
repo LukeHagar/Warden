@@ -40,6 +40,13 @@ import {
   IconButton,
   TextField,
 } from '@mui/material';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import Paper from '@mui/material/Paper';
 
 import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
@@ -112,6 +119,10 @@ function App() {
     localStorage.getItem('plex-servers')
   );
 
+  const [plexLibraries, setPlexLibraries] = useState(
+    localStorage.getItem('plex-libraries')
+  );
+
   console.log('Auth Token At Creation:');
   console.log(plexAuthToken);
 
@@ -159,11 +170,7 @@ function App() {
             console.log('Plex Auth Token:');
             console.log(authToken); // Returns the auth token if set, otherwise returns null
             if (authToken !== null) {
-              if (validatePlexAuthToken(authToken)) {
-                console.log('Plex Auth Token Validated');
-              } else {
-                console.log('Plex Auth Token failed validation');
-              }
+              validatePlexAuthToken(authToken);
             }
 
             // An auth token will only be null if the user never signs into the hosted UI, or you stop checking for a new one before they can log in
@@ -234,14 +241,23 @@ function App() {
     setPlexServers([]);
   }
 
-  console.log(
-    'https://plex.tv/api/v2/resources?' +
-      require('qs').stringify({
-        'X-Plex-Product': clientInformation.product,
-        'X-Plex-Client-Identifier': clientId,
-        'X-Plex-Token': plexAuthToken,
-      })
-  );
+  function getPlexLibraries() {
+    plexServers?.map((obj) => {
+      axios({
+        method: 'GET',
+        url:
+          'http://' +
+          obj.publicAddress +
+          ':32400/library/sections/?' +
+          require('qs').stringify({
+            'X-Plex-Token': obj.accessToken,
+          }),
+        headers: { accept: 'application/json' },
+      }).then((response) => {
+        console.log(response);
+      });
+    });
+  }
 
   function getPlexServers() {
     axios({
@@ -258,8 +274,7 @@ function App() {
         }),
       headers: { accept: 'application/json' },
     }).then((response) => {
-      // var xml = new XMLParser().parseFromString(response.data);
-      console.log('Plex Devices XML');
+      console.log('Plex Devices:');
       console.log(response);
       localStorage.setItem(
         'plex-servers',
@@ -280,6 +295,8 @@ function App() {
       getPlexServers();
     }
   }, [plexAuthToken]);
+
+  getPlexLibraries();
 
   // if (!authToken) {
   //   plexLogin();
@@ -528,6 +545,65 @@ function App() {
                                   Servers:
                                 </Typography>
                               </Grid>
+                              <TableContainer component={Paper}>
+                                <Table
+                                  sx={{ flexGrow: 1 }}
+                                  size="small"
+                                  aria-label="a dense table"
+                                >
+                                  <TableHead>
+                                    <TableRow>
+                                      <TableCell>Name</TableCell>
+                                      <TableCell align="right">
+                                        Public IP
+                                      </TableCell>
+                                      <TableCell align="right">
+                                        Platform
+                                      </TableCell>
+                                      <TableCell align="right">Yours</TableCell>
+                                      <TableCell align="right">
+                                        Connection
+                                      </TableCell>
+                                    </TableRow>
+                                  </TableHead>
+                                  <TableBody>
+                                    {plexServers
+                                      ? [...plexServers]?.map((row) => (
+                                          <TableRow
+                                            key={row.name}
+                                            sx={{
+                                              '&:last-child td, &:last-child th':
+                                                {
+                                                  border: 0,
+                                                },
+                                            }}
+                                          >
+                                            <TableCell
+                                              component="th"
+                                              scope="row"
+                                            >
+                                              {row?.name}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                              {row?.publicAddress}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                              {row?.platform}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                              {row?.owned ? 'Yes' : 'No'}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                              {row?.publicAddressMatches
+                                                ? 'Local'
+                                                : 'Remote'}
+                                            </TableCell>
+                                          </TableRow>
+                                        ))
+                                      : null}
+                                  </TableBody>
+                                </Table>
+                              </TableContainer>
                               {/* {plexServers
                                 ? [...plexServers]?.map((entry) => (
                                     <Grid item xs={12}>

@@ -6918,7 +6918,7 @@
   "resolved" "https://registry.npmjs.org/lodash.uniq/-/lodash.uniq-4.5.0.tgz"
   "version" "4.5.0"
 
-"lodash@^4.0.0", "lodash@^4.17.10", "lodash@^4.17.11", "lodash@^4.17.15", "lodash@^4.17.20", "lodash@^4.17.21":
+"lodash@^4.17.10", "lodash@^4.17.11", "lodash@^4.17.15", "lodash@^4.17.20", "lodash@^4.17.21":
   "integrity" "sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg=="
   "resolved" "https://registry.npmjs.org/lodash/-/lodash-4.17.21.tgz"
   "version" "4.17.21"
@@ -7845,31 +7845,10 @@
     "request-promise" "4.2.4"
     "xml2js" "0.4.19"
 
-"plex-api-credentials@3.0.1":
-  "integrity" "sha512-E0PdSVSqE5rmdEFNsIvFPDJQZPdBX7UR4sgkm9HF4V8VNbX0N4elASnMuoste8i9eTh4hCIqt761NQfzl45XnQ=="
-  "resolved" "https://registry.npmjs.org/plex-api-credentials/-/plex-api-credentials-3.0.1.tgz"
-  "version" "3.0.1"
-  dependencies:
-    "bluebird" "^3.3.5"
-    "plex-api-headers" "1.1.0"
-    "request-promise" "4.2.4"
-    "xml2js" "0.4.19"
-
 "plex-api-headers@1.1.0":
   "integrity" "sha512-Igl37++MSa+4H8LNP3Ene9GU0e1YypmXvFVNvVUwoAx44e74jbUlJXy4Q5rLSBisn0O2lBKdE6VkFIwrDl+UnQ=="
   "resolved" "https://registry.npmjs.org/plex-api-headers/-/plex-api-headers-1.1.0.tgz"
   "version" "1.1.0"
-
-"plex-api@^5.3.2":
-  "integrity" "sha512-RCFMQKu1cx+G4Y/8NfaifWEWEyhFFUV/d1/qAD4O1Si/IeA1S4hueC9py0uzFKR2iz+knuEPtVXtq9Upc9GImg=="
-  "resolved" "https://registry.npmjs.org/plex-api/-/plex-api-5.3.2.tgz"
-  "version" "5.3.2"
-  dependencies:
-    "plex-api-credentials" "3.0.1"
-    "plex-api-headers" "1.1.0"
-    "request" "^2.87.0"
-    "uuid" "^3.0.0"
-    "xml2js" "0.4.16"
 
 "plex-oauth@^2.0.2":
   "integrity" "sha512-tbs/zyukFdHYi/nS/VqW1GgquPTIs1RgWXINlBZsyqfO7a3x6rfQ7av0/dRotxyKkBq6xIKLcQGdCmHn9UDnrQ=="
@@ -8998,7 +8977,7 @@
     "stealthy-require" "^1.1.1"
     "tough-cookie" "^2.3.3"
 
-"request@^2.34", "request@^2.87.0":
+"request@^2.34":
   "integrity" "sha512-MsvtOrfG9ZcrOwAW+Qi+F6HbD0CWXEh9ou77uOb7FM2WPhwT7smM833PzanhJLsgXjN89Ir6V2PczXNnMpwKhw=="
   "resolved" "https://registry.npmjs.org/request/-/request-2.88.2.tgz"
   "version" "2.88.2"
@@ -10373,11 +10352,6 @@
   "resolved" "https://registry.npmjs.org/utils-merge/-/utils-merge-1.0.1.tgz"
   "version" "1.0.1"
 
-"uuid@^3.0.0":
-  "integrity" "sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A=="
-  "resolved" "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz"
-  "version" "3.4.0"
-
 "uuid@^3.3.2":
   "integrity" "sha512-HjSDRw6gZE5JMggctHBcjVak08+KEVhSIiDzFnT9S9aegmp85S/bReBVTb4QTFaRNptJ9kuYaNhnbNEOkbKb/A=="
   "resolved" "https://registry.npmjs.org/uuid/-/uuid-3.4.0.tgz"
@@ -10759,14 +10733,6 @@
   "resolved" "https://registry.npmjs.org/xml-name-validator/-/xml-name-validator-4.0.0.tgz"
   "version" "4.0.0"
 
-"xml2js@0.4.16":
-  "integrity" "sha512-9rH7UTUNphxeDRCeJBi4Fxp/z0fd92WeXNQ1dtUYMpqO3PaK59hVDCuUmOGHRZvufJDzcX8TG+Kdty7ylM0t2w=="
-  "resolved" "https://registry.npmjs.org/xml2js/-/xml2js-0.4.16.tgz"
-  "version" "0.4.16"
-  dependencies:
-    "sax" ">=0.6.0"
-    "xmlbuilder" "^4.1.0"
-
 "xml2js@0.4.19":
   "integrity" "sha512-esZnJZJOiJR9wWKMyuvSE1y6Dq5LCuJanqhxslH2bxM6duahNZ+HMpCLhBQGZkbX6xRf8x1Y2eJlgt2q3qo49Q=="
   "resolved" "https://registry.npmjs.org/xml2js/-/xml2js-0.4.19.tgz"
@@ -10774,13 +10740,6 @@
   dependencies:
     "sax" ">=0.6.0"
     "xmlbuilder" "~9.0.1"
-
-"xmlbuilder@^4.1.0":
-  "integrity" "sha512-oEePiEefhQhAeUnwRnIBLBWmk/fsWWbQ53EEWsRuzECbQ3m5o/Esmq6H47CYYwSLW+Ynt0rS9hd0pd2ogMAWjg=="
-  "resolved" "https://registry.npmjs.org/xmlbuilder/-/xmlbuilder-4.2.1.tgz"
-  "version" "4.2.1"
-  dependencies:
-    "lodash" "^4.0.0"
 
 "xmlbuilder@^9.0.7":
   "integrity" "sha1-Ey7mPS7FVlxVfiD0wi35rKaGsQ0="
