@@ -9,28 +9,11 @@
  * `./src/main.js` using webpack. This gives us some performance wins.
  */
 import path from 'path';
-import {
-  app,
-  BrowserWindow,
-  shell,
-  ipcMain,
-  nativeTheme,
-  dialog,
-} from 'electron';
+import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-
-if (process.defaultApp) {
-  if (process.argv.length >= 2) {
-    app.setAsDefaultProtocolClient('warden-ap', process.execPath, [
-      path.resolve(process.argv[1]),
-    ]);
-  }
-} else {
-  app.setAsDefaultProtocolClient('warden-ap');
-}
 
 class AppUpdater {
   constructor() {
@@ -92,7 +75,6 @@ const createWindow = async () => {
     height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
-      nodeIntegration: true,
       contextIsolation: true,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
@@ -101,23 +83,6 @@ const createWindow = async () => {
   });
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
-
-  ipcMain.handle('dark-mode:toggle', () => {
-    if (nativeTheme.shouldUseDarkColors) {
-      nativeTheme.themeSource = 'light';
-    } else {
-      nativeTheme.themeSource = 'dark';
-    }
-    return nativeTheme.shouldUseDarkColors;
-  });
-
-  ipcMain.handle('dark-mode:system', () => {
-    nativeTheme.themeSource = 'system';
-  });
-
-  ipcMain.handle('plex:login', () => {
-    window.open('https://github.com', '_blank', 'top=500,left=200,frame=false,nodeIntegration=no')
-  });
 
   mainWindow.on('ready-to-show', () => {
     if (!mainWindow) {
@@ -148,40 +113,51 @@ const createWindow = async () => {
   new AppUpdater();
 };
 
-const gotTheLock = app.requestSingleInstanceLock();
+app.on('second-instance', (event, commandLine, workingDirectory) => {
+  // Someone tried to run a second instance, we should focus our window.
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
+});
 
-if (!gotTheLock) {
-  app.quit();
-} else {
-  app.on('open-url', (event, url) => {
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`);
-  });
-
-  app.on('second-instance', (event, commandLine, workingDirectory) => {
-    // Someone tried to run a second instance, we should focus our window.
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
+// Create mainWindow, load the rest of the app, etc...
+app
+  .whenReady()
+  .then(() => {
+    createWindow();
+    if (process.defaultApp) {
+      if (process.argv.length >= 2) {
+        app.setAsDefaultProtocolClient('warden-ap', process.execPath, [
+          path.resolve(process.argv[1]),
+        ]);
+      }
+    } else {
+      app.setAsDefaultProtocolClient('warden-ap');
     }
-  });
+    app.on('activate', () => {
+      // On macOS it's common to re-create a window in the app when the
+      // dock icon is clicked and there are no other windows open.
+      if (mainWindow === null) createWindow();
+    });
+  })
+  .catch(console.log);
 
-  app.on('window-all-closed', () => {
-    // Respect the OSX convention of having the application in memory even
-    // after all windows have been closed
-    if (process.platform !== 'darwin') {
-      app.quit();
-    }
-  });
+app.on('open-url', (event, url) => {
+  dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`);
+});
 
-  app
-    .whenReady()
-    .then(() => {
-      createWindow();
-      app.on('activate', () => {
-        // On macOS it's common to re-create a window in the app when the
-        // dock icon is clicked and there are no other windows open.
-        if (mainWindow === null) createWindow();
-      });
-    })
-    .catch(console.log);
-}
+app.on('window-all-closed', () => {
+  // Respect the OSX convention of having the application in memory even
+  // after all windows have been closed
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
+});
+
+// Handle window controls via IPC
+ipcMain.on('shell:open', () => {
+  const pageDirectory = __dirname.replace('app.asar', 'app.asar.unpacked');
+  const pagePath = path.join('file://', pageDirectory, 'index.html');
+  shell.openExternal(pagePath);
+});
