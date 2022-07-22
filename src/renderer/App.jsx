@@ -54,6 +54,7 @@ import ReactJkMusicPlayer from 'react-jinke-music-player';
 import { PlexOauth, IPlexClientDetails } from 'plex-oauth';
 import XMLParser from 'react-xml-parser';
 import ipaddr from 'ipaddr.js';
+import { contextIsolated } from 'process';
 
 const drawerWidth = 240;
 
@@ -68,30 +69,27 @@ function App() {
   const [activePage, setActivePage] = useState(0);
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
-    console.log('🎉 Dark mode is supported');
+    //console.log('🎉 Dark mode is supported');
   }
 
   const MediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   let activeTheme;
 
   if (MediaQuery.matches) {
-    console.log('🎉 Dark mode is preferred');
+    //console.log('🎉 Dark mode is preferred');
     activeTheme = createTheme({
       palette: {
         mode: 'dark',
       },
     });
   } else {
-    console.log('🎉 Light mode is preferred');
+    //console.log('🎉 Light mode is preferred');
     activeTheme = createTheme({
       palette: {
         mode: 'light',
       },
     });
   }
-
-  console.log('Theme');
-  console.log(activeTheme);
 
   function openInNewTab(url) {
     var win = window.open(url, '_blank');
@@ -107,30 +105,21 @@ function App() {
     setClientID(uuid);
   }
 
-  const [plexAuthToken, setPlexAuthToken] = useState(
-    localStorage.getItem('plex-authToken')
+  const [plexData, setPlexData] = useState(
+    localStorage.getItem('plex-database')
   );
 
-  const [plexUserData, setPlexUserData] = useState(
-    localStorage.getItem('plex-userData')
-  );
+  // console.log('Theme');
+  // console.log(activeTheme);
 
-  const [plexServers, setPlexServers] = useState(
-    localStorage.getItem('plex-servers')
-  );
+  // console.log('Auth Token At Creation:');
+  // console.log(plexAuthToken);
 
-  const [plexLibraries, setPlexLibraries] = useState(
-    localStorage.getItem('plex-libraries')
-  );
+  // console.log('Plex User Data At Creation:');
+  // console.log(plexUserData);
 
-  console.log('Auth Token At Creation:');
-  console.log(plexAuthToken);
-
-  console.log('Plex User Data At Creation:');
-  console.log(plexUserData);
-
-  console.log('Plex Servers At Creation:');
-  console.log(plexServers);
+  // console.log('Plex Servers At Creation:');
+  // console.log(plexServers);
 
   let clientInformation = {
     clientIdentifier: clientId, // This is a unique identifier used to identify your app with Plex.
@@ -201,15 +190,16 @@ function App() {
         console.log(response);
         console.log(response.status);
         if (response.status === 200) {
-          localStorage.setItem('plex-userData', response.data);
-          localStorage.setItem('plex-authToken', authToken);
-          setPlexUserData(response.data);
-          setPlexAuthToken(authToken);
-
-          return true;
+          let tempData = plexData;
+          tempData.plexUserData = response.data;
+          tempData.plexAuthToken = authToken;
+          setPlexData(tempData);
+          getPlexServers();
+          getPlexLibraries();
+          getPlexMusicLibraries();
+          savePlexState();
         }
         if (response.status === 401) {
-          return false;
         }
       })
       .catch(function (error) {
@@ -233,31 +223,60 @@ function App() {
   }
 
   function plexLogout() {
-    localStorage.setItem('plex-authToken', null);
-    localStorage.setItem('plex-userData', null);
-    localStorage.setItem('plex-servers', null);
-    setPlexAuthToken(null);
-    setPlexUserData(null);
-    setPlexServers([]);
-  }
-
-  function getPlexLibraries() {
-    plexServers?.map((obj) => {
-      axios({
-        method: 'GET',
-        url:
-          'http://' +
-          obj.publicAddress +
-          ':32400/library/sections/?' +
-          require('qs').stringify({
-            'X-Plex-Token': obj.accessToken,
-          }),
-        headers: { accept: 'application/json' },
-      }).then((response) => {
-        console.log(response);
-      });
+    localStorage.setItem('plex-database', null);
+    setPlexData({
+      plexAuthToken: null,
+      plexUserData: null,
+      plexServers: null,
+      plexLibraries: null,
+      plexMusicLibraries: null,
     });
   }
+
+  // function testPlexServer(ipAddress, accessToken) {
+  //   obj?.connections
+  //     ?.filter((ipEntry) => ipEntry?.local === true)
+  //     ?.map((localIP) => {
+  //       console.log(localIP);
+  //       axios({
+  //         method: 'GET',
+  //         timeout: 100,
+  //         url:
+  //           'http://' +
+  //           localIP.address +
+  //           ':32400?' +
+  //           require('qs').stringify({
+  //             'X-Plex-Token': obj?.accessToken,
+  //           }),
+  //       })
+  //         .catch(function (error) {
+  //           if (error.response) {
+  //             // The request was made and the server responded with a status code
+  //             // that falls out of the range of 2xx
+  //             console.log(error.response.data);
+  //             console.log(error.response.status);
+  //             console.log(error.response.headers);
+  //           } else if (error.request) {
+  //             // The request was made but no response was received
+  //             // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+  //             // http.ClientRequest in node.js
+  //             console.log(error.request);
+  //           } else {
+  //             // Something happened in setting up the request that triggered an Error
+  //             console.log('Error', error.message);
+  //           }
+  //           console.log(error.config);
+  //         })
+  //         .then((response) => {
+  //           console.log();
+  //           if (response?.status === 200) {
+  //             localArray = [...localArray, localIP];
+  //           } else {
+  //             return null;
+  //           }
+  //         });
+  //     });
+  // }
 
   function getPlexServers() {
     axios({
@@ -276,27 +295,75 @@ function App() {
     }).then((response) => {
       console.log('Plex Devices:');
       console.log(response);
-      localStorage.setItem(
-        'plex-servers',
-        response?.data.filter((obj) =>
-          obj.product.includes('Plex Media Server')
-        )
-      );
-      setPlexServers(
-        response?.data.filter((obj) =>
-          obj.product.includes('Plex Media Server')
-        )
-      );
+      console.log();
+      let tempData = plexData;
+      tempData.plexServers = response?.data
+        ?.filter((obj) => obj.product.includes('Plex Media Server'))
+        ?.map((obj) => {
+          console.log(obj);
+          return {
+            accessToken: obj?.accessToken,
+            relay: obj?.connections?.filter(
+              (ipEntry) => ipEntry?.relay === true
+            ),
+            local: obj?.connections?.filter(
+              (ipEntry) => ipEntry?.local === true
+            ),
+          };
+        });
     });
+
+    setPlexData(tempData);
   }
 
-  useEffect(() => {
-    if (plexAuthToken !== null) {
-      getPlexServers();
-    }
-  }, [plexAuthToken]);
+  function getPlexLibraries() {
+    let tempData = plexData;
+    plexData?.plexServers?.map((server) => {
+      server?.relay?.map((relay) =>
+        axios({
+          method: 'GET',
+          url:
+            relay.address +
+            '/library/sections/?' +
+            require('qs').stringify({
+              'X-Plex-Token': server.accessToken,
+            }),
+          headers: { accept: 'application/json' },
+        }).then((response) => {
+          response?.data?.MediaContainer?.Directory?.map((entry) => {
+            if (tempData.plexServers.some((e) => e.uuid === entry.uuid)) {
+            } else {
+              tempData.plexServers = [...tempData.plexServers, entry];
+            }
+          });
+        })
+      );
+    });
+    setPlexData(tempData);
+  }
 
-  getPlexLibraries();
+  function savePlexState() {
+    if (plexData === null) {
+      plexLogin();
+    } else {
+      localStorage.setItem('plex-database', plexData);
+      console.log('Plex Database:');
+      console.log(localStorage.getItem('plex-database'));
+    }
+  }
+
+  function getPlexMusicLibraries() {
+    setPlexMusicLibraries(
+      plexLibraries?.filter((obj) => obj?.type === 'artist')
+    );
+  }
+
+  if (plexData.authToken !== null) {
+    console.log(plexData.authToken);
+    validatePlexAuthToken(plexData.authToken);
+  } else {
+    plexLogout();
+  }
 
   // if (!authToken) {
   //   plexLogin();
@@ -308,19 +375,28 @@ function App() {
   //   getPlexServers();
   // }
 
-  console.log('Main Body');
+  // console.log('Main Body');
 
-  console.log('clientId:');
-  console.log(clientId);
+  // console.log('clientId:');
+  // console.log(clientId);
 
-  console.log('Plex Auth Token:');
-  console.log(plexAuthToken);
+  // console.log('Plex Auth Token:');
+  // console.log(plexAuthToken);
 
-  console.log('Plex User Data:');
-  console.log(plexUserData);
+  // console.log('Plex User Data:');
+  // console.log(plexUserData);
 
-  console.log('Plex Servers:');
-  console.log(plexServers);
+  // console.log('Plex Servers:');
+  // console.log(plexServers);
+
+  // console.log('Plex Libraries:');
+  // console.log(plexLibraries);
+
+  // console.log('Plex Music Libraries:');
+  // console.log(plexMusicLibraries);
+
+  console.log('Plex DataBase');
+  console.log(plexData);
 
   function isHidden(id) {
     if (activePage === id) {
@@ -367,14 +443,41 @@ function App() {
           </Toolbar>
           <Divider />
           <List>
-            {['Home', 'Library', 'Playlists', 'Settings'].map((text, index) => (
-              <ListItem key={text} disablePadding>
-                <ListItemButton onClick={() => setActivePage(index)}>
-                  <ListItemIcon>{iconindex[text]}</ListItemIcon>
-                  <ListItemText primary={text} />
+            <ListItem key={'Home'} disablePadding>
+              <ListItemButton onClick={() => setActivePage(0)}>
+                <ListItemIcon>{iconindex['Home']}</ListItemIcon>
+                <ListItemText primary={'Home'} />
+              </ListItemButton>
+            </ListItem>
+            <Divider />
+            <ListItem key={'Libraries'} disablePadding>
+              <ListItemButton onClick={() => setActivePage(1)}>
+                <ListItemIcon>{iconindex['Library']}</ListItemIcon>
+                <ListItemText primary={'Libraries'} />
+              </ListItemButton>
+            </ListItem>
+            {plexData?.plexMusicLibraries?.map((obj) => (
+              <ListItem key={obj.uuid} disablePadding>
+                <ListItemButton onClick={() => setMusicFilter(obj)}>
+                  <ListItemIcon>{iconindex['Library']}</ListItemIcon>
+                  <ListItemText primary={obj.title} />
                 </ListItemButton>
               </ListItem>
             ))}
+            <Divider />
+            <ListItem key={'Playlists'} disablePadding>
+              <ListItemButton onClick={() => setActivePage(2)}>
+                <ListItemIcon>{iconindex['Playlists']}</ListItemIcon>
+                <ListItemText primary={'Playlists'} />
+              </ListItemButton>
+            </ListItem>
+            <Divider />
+            <ListItem key={'Settings'} disablePadding>
+              <ListItemButton onClick={() => setActivePage(3)}>
+                <ListItemIcon>{iconindex['Settings']}</ListItemIcon>
+                <ListItemText primary={'Settings'} />
+              </ListItemButton>
+            </ListItem>
           </List>
         </Drawer>
         <Box
@@ -450,8 +553,8 @@ function App() {
                       <CardHeader
                         avatar={
                           <Avatar
-                            alt={plexUserData?.friendlyName}
-                            src={plexUserData?.thumb}
+                            alt={plexData?.plexUserData?.friendlyName}
+                            src={plexData?.plexUserData?.thumb}
                             sx={{ width: 56, height: 56 }}
                           />
                         }
@@ -477,8 +580,8 @@ function App() {
                         }
                         title="Plex Account"
                         subheader={
-                          'Username: ' + plexUserData?.username
-                            ? plexUserData?.username
+                          'Username: ' + plexData?.plexUserData?.username
+                            ? plexData?.plexUserData?.username
                             : null
                         }
                       />
@@ -500,7 +603,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Username: {plexUserData?.username}
+                                  Username: {plexData?.plexUserData?.username}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -508,7 +611,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Email: {plexUserData?.email}
+                                  Email: {plexData?.plexUserData?.email}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -517,7 +620,10 @@ function App() {
                                   component="div"
                                 >
                                   Account Status:{' '}
-                                  {plexUserData?.subscriptionDescription}
+                                  {
+                                    plexData?.plexUserData
+                                      ?.subscriptionDescription
+                                  }
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -526,7 +632,9 @@ function App() {
                                   component="div"
                                 >
                                   Plex Auth Token:{' '}
-                                  {plexAuthToken ? plexAuthToken : null}
+                                  {plexData?.plexAuthToken
+                                    ? plexAuthToken
+                                    : null}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -567,39 +675,41 @@ function App() {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {plexServers
-                                      ? [...plexServers]?.map((row) => (
-                                          <TableRow
-                                            key={row.name}
-                                            sx={{
-                                              '&:last-child td, &:last-child th':
-                                                {
-                                                  border: 0,
-                                                },
-                                            }}
-                                          >
-                                            <TableCell
-                                              component="th"
-                                              scope="row"
+                                    {plexData?.plexServers
+                                      ? [...plexData?.plexServers]?.map(
+                                          (row) => (
+                                            <TableRow
+                                              key={row.name}
+                                              sx={{
+                                                '&:last-child td, &:last-child th':
+                                                  {
+                                                    border: 0,
+                                                  },
+                                              }}
                                             >
-                                              {row?.name}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                              {row?.publicAddress}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                              {row?.platform}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                              {row?.owned ? 'Yes' : 'No'}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                              {row?.publicAddressMatches
-                                                ? 'Local'
-                                                : 'Remote'}
-                                            </TableCell>
-                                          </TableRow>
-                                        ))
+                                              <TableCell
+                                                component="th"
+                                                scope="row"
+                                              >
+                                                {row?.name}
+                                              </TableCell>
+                                              <TableCell align="right">
+                                                {row?.publicAddress}
+                                              </TableCell>
+                                              <TableCell align="right">
+                                                {row?.platform}
+                                              </TableCell>
+                                              <TableCell align="right">
+                                                {row?.owned ? 'Yes' : 'No'}
+                                              </TableCell>
+                                              <TableCell align="right">
+                                                {row?.publicAddressMatches
+                                                  ? 'Local'
+                                                  : 'Remote'}
+                                              </TableCell>
+                                            </TableRow>
+                                          )
+                                        )
                                       : null}
                                   </TableBody>
                                 </Table>
