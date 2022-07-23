@@ -54,7 +54,6 @@ import ReactJkMusicPlayer from 'react-jinke-music-player';
 import { PlexOauth, IPlexClientDetails } from 'plex-oauth';
 import XMLParser from 'react-xml-parser';
 import ipaddr from 'ipaddr.js';
-import { contextIsolated } from 'process';
 
 const drawerWidth = 240;
 
