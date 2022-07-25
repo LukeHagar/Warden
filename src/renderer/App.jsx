@@ -48,12 +48,11 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import { v4 as uuidv4 } from 'uuid';
 import axios from 'axios';
 import ReactJkMusicPlayer from 'react-jinke-music-player';
-import { PlexOauth, IPlexClientDetails } from 'plex-oauth';
 import XMLParser from 'react-xml-parser';
 import ipaddr from 'ipaddr.js';
+import { PlexAPIOAuth, PlexLogin, ValidatePlexAuthToken } from 'plex-api-oauth';
 
 const drawerWidth = 240;
 
@@ -68,21 +67,21 @@ function App() {
   const [activePage, setActivePage] = useState(0);
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
-    //console.log('🎉 Dark mode is supported');
+    // console.log('🎉 Dark mode is supported');
   }
 
   const MediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
   let activeTheme;
 
   if (MediaQuery.matches) {
-    //console.log('🎉 Dark mode is preferred');
+    // console.log('🎉 Dark mode is preferred');
     activeTheme = createTheme({
       palette: {
         mode: 'dark',
       },
     });
   } else {
-    //console.log('🎉 Light mode is preferred');
+    // console.log('🎉 Light mode is preferred');
     activeTheme = createTheme({
       palette: {
         mode: 'light',
@@ -90,23 +89,72 @@ function App() {
     });
   }
 
-  function openInNewTab(url) {
-    var win = window.open(url, '_blank');
-    win?.focus;
+  // let PlexSessionData;
+  // try {
+  //   PlexSessionData = JSON.parse(localStorage.getItem('plexSessionData'));
+  // } catch (e) {
+  //   PlexSessionData = null;
+  // }
+
+  function SetSessionData(plexSession, sessionData) {
+    if (Object.keys(sessionData).length !== 0) {
+      console.log(sessionData);
+      plexSession.clientId = sessionData.clientId;
+      plexSession.plexTVAuthToken = sessionData.plexTVAuthToken;
+      plexSession.plexTVUserData = sessionData.plexTVUserData;
+      plexSession.plexServers = sessionData.plexServers;
+      plexSession.plexLibraries = sessionData.plexLibraries;
+      plexSession.plexMovies = sessionData.plexMovies;
+      plexSession.plexMusic = sessionData.plexMusic;
+      plexSession.plexTVShows = sessionData.plexTVShows;
+      plexSession.product = sessionData.product;
+      plexSession.device = sessionData.device;
+      plexSession.version = sessionData.version;
+      plexSession.forwardUrl = sessionData.forwardUrl;
+      plexSession.platform = sessionData.platform;
+      plexSession.plexClientInformation = sessionData.plexClientInformation;
+      return true;
+    }
+    return false;
   }
 
-  const [clientId, setClientID] = useState(
-    localStorage.getItem('plex-client-id')
-  );
-  if (clientId === null) {
-    const uuid = uuidv4();
-    localStorage.setItem('plex-client-id', uuid);
-    setClientID(uuid);
+  const PlexSession = new PlexAPIOAuth();
+  // console.log(PlexSessionData);
+  console.log(PlexSession);
+  try {
+    SetSessionData(
+      PlexSession,
+      JSON.parse(localStorage.getItem('plexSessionData'))
+    );
+  } catch (e) {
+    console.log(e);
   }
 
-  const [plexData, setPlexData] = useState(
-    localStorage.getItem('plex-database')
-  );
+  console.log('No Plex Session found');
+  if (PlexSession.ClientId === '') {
+    PlexSession.GenerateClientId();
+  }
+  console.log(PlexSession);
+  localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
+  // localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
+  // }
+  // function openInNewTab(url) {
+  //   var win = window.open(url, '_blank');
+  //   win?.focus;
+  // }
+
+  // const [clientId, setClientID] = useState(
+  //   localStorage.getItem('plex-client-id')
+  // );
+  // if (clientId === null) {
+  //   const uuid = uuidv4();
+  //   localStorage.setItem('plex-client-id', uuid);
+  //   setClientID(uuid);
+  // }
+
+  // const [plexData, setPlexData] = useState(
+  //   localStorage.getItem('plex-database')
+  // );
 
   // console.log('Theme');
   // console.log(activeTheme);
@@ -120,117 +168,117 @@ function App() {
   // console.log('Plex Servers At Creation:');
   // console.log(plexServers);
 
-  let clientInformation = {
-    clientIdentifier: clientId, // This is a unique identifier used to identify your app with Plex.
-    product: 'Warden', // Name of your application
-    device: '', // The type of device your application is running on
-    version: '1', // Version of your application
-    forwardUrl: '', // Url to forward back to after signing in.                            // Optional - Platform your application runs on - Defaults to 'Web'
-  };
+  // let clientInformation = {
+  //   clientIdentifier: clientId, // This is a unique identifier used to identify your app with Plex.
+  //   product: 'Warden', // Name of your application
+  //   device: '', // The type of device your application is running on
+  //   version: '1', // Version of your application
+  //   forwardUrl: '', // Url to forward back to after signing in.                            // Optional - Platform your application runs on - Defaults to 'Web'
+  // };
 
-  function plexLogin() {
-    let plexOauth = new PlexOauth(clientInformation);
-    // Get hosted UI URL and Pin Id
+  // function plexLogin() {
+  //   let plexOauth = new PlexOauth(clientInformation);
+  //   // Get hosted UI URL and Pin Id
 
-    plexOauth
-      .requestHostedLoginURL()
-      .then((data) => {
-        let [hostedUILink, pinId] = data;
+  //   plexOauth
+  //     .requestHostedLoginURL()
+  //     .then((data) => {
+  //       let [hostedUILink, pinId] = data;
 
-        openInNewTab(hostedUILink);
+  //       openInNewTab(hostedUILink);
 
-        console.log('Plex Auth URL:');
-        console.log(hostedUILink); // UI URL used to log into Plex
-        console.log('Plex Pin ID:');
-        console.log(pinId);
-        /*
-         * You can now navigate the user's browser to the 'hostedUILink'. This will include the forward URL
-         * for your application, so when they have finished signing into Plex, they will be redirected back
-         * to the specified URL. From there, you just need to perform a query to check for the auth token.
-         * (See Below)
-         */
+  //       console.log('Plex Auth URL:');
+  //       console.log(hostedUILink); // UI URL used to log into Plex
+  //       console.log('Plex Pin ID:');
+  //       console.log(pinId);
+  //       /*
+  //        * You can now navigate the user's browser to the 'hostedUILink'. This will include the forward URL
+  //        * for your application, so when they have finished signing into Plex, they will be redirected back
+  //        * to the specified URL. From there, you just need to perform a query to check for the auth token.
+  //        * (See Below)
+  //        */
 
-        // Check for the auth token, once returning to the application
+  //       // Check for the auth token, once returning to the application
 
-        plexOauth
-          .checkForAuthToken(pinId, 1000, 10)
-          .then((authToken) => {
-            console.log('Plex Auth Token:');
-            console.log(authToken); // Returns the auth token if set, otherwise returns null
-            if (authToken !== null) {
-              validatePlexAuthToken(authToken);
-            }
+  //       plexOauth
+  //         .checkForAuthToken(pinId, 1000, 10)
+  //         .then((authToken) => {
+  //           console.log('Plex Auth Token:');
+  //           console.log(authToken); // Returns the auth token if set, otherwise returns null
+  //           if (authToken !== null) {
+  //             validatePlexAuthToken(authToken);
+  //           }
 
-            // An auth token will only be null if the user never signs into the hosted UI, or you stop checking for a new one before they can log in
-          })
+  //           // An auth token will only be null if the user never signs into the hosted UI, or you stop checking for a new one before they can log in
+  //         })
 
-          .catch((err) => {
-            throw err;
-          });
-      })
-      .catch((err) => {
-        throw err;
-      });
-  }
+  //         .catch((err) => {
+  //           throw err;
+  //         });
+  //     })
+  //     .catch((err) => {
+  //       throw err;
+  //     });
+  // }
 
-  function validatePlexAuthToken(authToken) {
-    axios({
-      method: 'GET',
-      url:
-        'https://plex.tv/api/v2/user?' +
-        require('qs').stringify({
-          'X-Plex-Product': clientInformation.product,
-          'X-Plex-Client-Identifier': clientId,
-          'X-Plex-Token': authToken,
-        }),
-      headers: { accept: 'application/json' },
-    })
-      .then((response) => {
-        console.log(response);
-        console.log(response.status);
-        if (response.status === 200) {
-          let tempData = plexData;
-          tempData.plexUserData = response.data;
-          tempData.plexAuthToken = authToken;
-          setPlexData(tempData);
-          getPlexServers();
-          getPlexLibraries();
-          getPlexMusicLibraries();
-          savePlexState();
-        }
-        if (response.status === 401) {
-        }
-      })
-      .catch(function (error) {
-        if (error.response) {
-          // The request was made and the server responded with a status code
-          // that falls out of the range of 2xx
-          console.log(error.response.data);
-          console.log(error.response.status);
-          console.log(error.response.headers);
-        } else if (error.request) {
-          // The request was made but no response was received
-          // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-          // http.ClientRequest in node.js
-          console.log(error.request);
-        } else {
-          // Something happened in setting up the request that triggered an Error
-          console.log('Error', error.message);
-        }
-        console.log(error.config);
-      });
-  }
+  // function validatePlexAuthToken(authToken) {
+  //   axios({
+  //     method: 'GET',
+  //     url:
+  //       'https://plex.tv/api/v2/user?' +
+  //       require('qs').stringify({
+  //         'X-Plex-Product': clientInformation.product,
+  //         'X-Plex-Client-Identifier': clientId,
+  //         'X-Plex-Token': authToken,
+  //       }),
+  //     headers: { accept: 'application/json' },
+  //   })
+  //     .then((response) => {
+  //       console.log(response);
+  //       console.log(response.status);
+  //       if (response.status === 200) {
+  //         let tempData = plexData;
+  //         tempData.plexUserData = response.data;
+  //         tempData.plexAuthToken = authToken;
+  //         setPlexData(tempData);
+  //         getPlexServers();
+  //         getPlexLibraries();
+  //         getPlexMusicLibraries();
+  //         savePlexState();
+  //       }
+  //       if (response.status === 401) {
+  //       }
+  //     })
+  //     .catch(function (error) {
+  //       if (error.response) {
+  //         // The request was made and the server responded with a status code
+  //         // that falls out of the range of 2xx
+  //         console.log(error.response.data);
+  //         console.log(error.response.status);
+  //         console.log(error.response.headers);
+  //       } else if (error.request) {
+  //         // The request was made but no response was received
+  //         // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
+  //         // http.ClientRequest in node.js
+  //         console.log(error.request);
+  //       } else {
+  //         // Something happened in setting up the request that triggered an Error
+  //         console.log('Error', error.message);
+  //       }
+  //       console.log(error.config);
+  //     });
+  // }
 
-  function plexLogout() {
-    localStorage.setItem('plex-database', null);
-    setPlexData({
-      plexAuthToken: null,
-      plexUserData: null,
-      plexServers: null,
-      plexLibraries: null,
-      plexMusicLibraries: null,
-    });
-  }
+  // function plexLogout() {
+  //   localStorage.setItem('plex-database', null);
+  //   setPlexData({
+  //     plexAuthToken: null,
+  //     plexUserData: null,
+  //     plexServers: null,
+  //     plexLibraries: null,
+  //     plexMusicLibraries: null,
+  //   });
+  // }
 
   // function testPlexServer(ipAddress, accessToken) {
   //   obj?.connections
@@ -277,92 +325,92 @@ function App() {
   //     });
   // }
 
-  function getPlexServers() {
-    axios({
-      method: 'GET',
-      url:
-        'https://plex.tv/api/v2/resources?' +
-        require('qs').stringify({
-          includeHttps: 1,
-          includeRelay: 1,
-          includeIPv6: 1,
-          'X-Plex-Product': clientInformation.product,
-          'X-Plex-Client-Identifier': clientId,
-          'X-Plex-Token': plexAuthToken,
-        }),
-      headers: { accept: 'application/json' },
-    }).then((response) => {
-      console.log('Plex Devices:');
-      console.log(response);
-      console.log();
-      let tempData = plexData;
-      tempData.plexServers = response?.data
-        ?.filter((obj) => obj.product.includes('Plex Media Server'))
-        ?.map((obj) => {
-          console.log(obj);
-          return {
-            accessToken: obj?.accessToken,
-            relay: obj?.connections?.filter(
-              (ipEntry) => ipEntry?.relay === true
-            ),
-            local: obj?.connections?.filter(
-              (ipEntry) => ipEntry?.local === true
-            ),
-          };
-        });
-    });
+  // function getPlexServers() {
+  //   axios({
+  //     method: 'GET',
+  //     url:
+  //       'https://plex.tv/api/v2/resources?' +
+  //       require('qs').stringify({
+  //         includeHttps: 1,
+  //         includeRelay: 1,
+  //         includeIPv6: 1,
+  //         'X-Plex-Product': clientInformation.product,
+  //         'X-Plex-Client-Identifier': clientId,
+  //         'X-Plex-Token': plexAuthToken,
+  //       }),
+  //     headers: { accept: 'application/json' },
+  //   }).then((response) => {
+  //     console.log('Plex Devices:');
+  //     console.log(response);
+  //     console.log();
+  //     let tempData = plexData;
+  //     tempData.plexServers = response?.data
+  //       ?.filter((obj) => obj.product.includes('Plex Media Server'))
+  //       ?.map((obj) => {
+  //         console.log(obj);
+  //         return {
+  //           accessToken: obj?.accessToken,
+  //           relay: obj?.connections?.filter(
+  //             (ipEntry) => ipEntry?.relay === true
+  //           ),
+  //           local: obj?.connections?.filter(
+  //             (ipEntry) => ipEntry?.local === true
+  //           ),
+  //         };
+  //       });
+  //   });
 
-    setPlexData(tempData);
-  }
+  //   setPlexData(tempData);
+  // }
 
-  function getPlexLibraries() {
-    let tempData = plexData;
-    plexData?.plexServers?.map((server) => {
-      server?.relay?.map((relay) =>
-        axios({
-          method: 'GET',
-          url:
-            relay.address +
-            '/library/sections/?' +
-            require('qs').stringify({
-              'X-Plex-Token': server.accessToken,
-            }),
-          headers: { accept: 'application/json' },
-        }).then((response) => {
-          response?.data?.MediaContainer?.Directory?.map((entry) => {
-            if (tempData.plexServers.some((e) => e.uuid === entry.uuid)) {
-            } else {
-              tempData.plexServers = [...tempData.plexServers, entry];
-            }
-          });
-        })
-      );
-    });
-    setPlexData(tempData);
-  }
+  // function getPlexLibraries() {
+  //   let tempData = plexData;
+  //   plexData?.plexServers?.map((server) => {
+  //     server?.relay?.map((relay) =>
+  //       axios({
+  //         method: 'GET',
+  //         url:
+  //           relay.address +
+  //           '/library/sections/?' +
+  //           require('qs').stringify({
+  //             'X-Plex-Token': server.accessToken,
+  //           }),
+  //         headers: { accept: 'application/json' },
+  //       }).then((response) => {
+  //         response?.data?.MediaContainer?.Directory?.map((entry) => {
+  //           if (tempData.plexServers.some((e) => e.uuid === entry.uuid)) {
+  //           } else {
+  //             tempData.plexServers = [...tempData.plexServers, entry];
+  //           }
+  //         });
+  //       })
+  //     );
+  //   });
+  //   setPlexData(tempData);
+  // }
 
-  function savePlexState() {
-    if (plexData === null) {
-      plexLogin();
-    } else {
-      localStorage.setItem('plex-database', plexData);
-      console.log('Plex Database:');
-      console.log(localStorage.getItem('plex-database'));
-    }
-  }
+  // function savePlexState() {
+  //   if (plexData === null) {
+  //     plexLogin();
+  //   } else {
+  //     localStorage.setItem('plex-database', plexData);
+  //     console.log('Plex Database:');
+  //     console.log(localStorage.getItem('plex-database'));
+  //   }
+  // }
 
-  function getPlexMusicLibraries() {
-    setPlexMusicLibraries(
-      plexLibraries?.filter((obj) => obj?.type === 'artist')
-    );
-  }
+  // function getPlexMusicLibraries() {
+  //   setPlexMusicLibraries(
+  //     plexLibraries?.filter((obj) => obj?.type === 'artist')
+  //   );
+  // }
 
-  if (plexData.authToken !== null) {
-    console.log(plexData.authToken);
-    validatePlexAuthToken(plexData.authToken);
-  } else {
-    plexLogout();
-  }
+  // if (plexData.authToken !== null) {
+  //   console.log(plexData.authToken);
+  //   validatePlexAuthToken(plexData.authToken);
+  // } else {
+  //   plexLogout();
+  // }
 
   // if (!authToken) {
   //   plexLogin();
@@ -394,8 +442,20 @@ function App() {
   // console.log('Plex Music Libraries:');
   // console.log(plexMusicLibraries);
 
-  console.log('Plex DataBase');
-  console.log(plexData);
+  // console.log('Plex DataBase');
+  // console.log(plexData);
+
+  console.log(PlexSession);
+
+  useEffect(() => PlexSession.PlexLogin(), []);
+
+  PlexSession.GetPlexUserData();
+
+  function PlexLoginButton() {
+    PlexSession.PlexLogin();
+    PlexSession.GetPlexUserData();
+    window.localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
+  }
 
   function isHidden(id) {
     if (activePage === id) {
@@ -420,7 +480,7 @@ function App() {
           }}
         >
           <Toolbar>
-            <Box></Box>
+            <Box />
           </Toolbar>
         </AppBar>
         <Drawer
@@ -442,39 +502,39 @@ function App() {
           </Toolbar>
           <Divider />
           <List>
-            <ListItem key={'Home'} disablePadding>
+            <ListItem key="Home" disablePadding>
               <ListItemButton onClick={() => setActivePage(0)}>
-                <ListItemIcon>{iconindex['Home']}</ListItemIcon>
-                <ListItemText primary={'Home'} />
+                <ListItemIcon>{iconindex.Home}</ListItemIcon>
+                <ListItemText primary="Home" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key={'Libraries'} disablePadding>
+            <ListItem key="Libraries" disablePadding>
               <ListItemButton onClick={() => setActivePage(1)}>
-                <ListItemIcon>{iconindex['Library']}</ListItemIcon>
-                <ListItemText primary={'Libraries'} />
+                <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                <ListItemText primary="Libraries" />
               </ListItemButton>
             </ListItem>
-            {plexData?.plexMusicLibraries?.map((obj) => (
+            {PlexSession?.plexMusicLibraries?.map((obj) => (
               <ListItem key={obj.uuid} disablePadding>
-                <ListItemButton onClick={() => setMusicFilter(obj)}>
-                  <ListItemIcon>{iconindex['Library']}</ListItemIcon>
+                <ListItemButton>
+                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
                   <ListItemText primary={obj.title} />
                 </ListItemButton>
               </ListItem>
             ))}
             <Divider />
-            <ListItem key={'Playlists'} disablePadding>
+            <ListItem key="Playlists" disablePadding>
               <ListItemButton onClick={() => setActivePage(2)}>
-                <ListItemIcon>{iconindex['Playlists']}</ListItemIcon>
-                <ListItemText primary={'Playlists'} />
+                <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
+                <ListItemText primary="Playlists" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key={'Settings'} disablePadding>
+            <ListItem key="Settings" disablePadding>
               <ListItemButton onClick={() => setActivePage(3)}>
-                <ListItemIcon>{iconindex['Settings']}</ListItemIcon>
-                <ListItemText primary={'Settings'} />
+                <ListItemIcon>{iconindex.Settings}</ListItemIcon>
+                <ListItemText primary="Settings" />
               </ListItemButton>
             </ListItem>
           </List>
@@ -533,7 +593,7 @@ function App() {
             </Grid>
             <Grid item xs={12}>
               <Typography sx={{ flexGrow: 1 }} component="div">
-                UUID:{clientId}
+                UUID:{PlexSession?.clientId}
               </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -552,8 +612,8 @@ function App() {
                       <CardHeader
                         avatar={
                           <Avatar
-                            alt={plexData?.plexUserData?.friendlyName}
-                            src={plexData?.plexUserData?.thumb}
+                            alt={PlexSession?.plexUserData?.friendlyName}
+                            src={PlexSession?.plexUserData?.thumb}
                             sx={{ width: 56, height: 56 }}
                           />
                         }
@@ -561,26 +621,21 @@ function App() {
                           <Grid container spacing={2}>
                             <Grid item xs={5}>
                               <Button
-                                onClick={() => plexLogin()}
+                                onClick={() => PlexLoginButton()}
                                 variant="outlined"
                               >
                                 Login
                               </Button>
                             </Grid>
                             <Grid item xs={5}>
-                              <Button
-                                onClick={() => plexLogout()}
-                                variant="outlined"
-                              >
-                                Logout
-                              </Button>
+                              <Button variant="outlined">Logout</Button>
                             </Grid>
                           </Grid>
                         }
                         title="Plex Account"
                         subheader={
-                          'Username: ' + plexData?.plexUserData?.username
-                            ? plexData?.plexUserData?.username
+                          `Username: ${PlexSession?.plexUserData?.username}`
+                            ? PlexSession?.plexUserData?.username
                             : null
                         }
                       />
@@ -602,7 +657,8 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Username: {plexData?.plexUserData?.username}
+                                  Username:{' '}
+                                  {PlexSession?.plexUserData?.username}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -610,7 +666,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Email: {plexData?.plexUserData?.email}
+                                  Email: {PlexSession?.plexUserData?.email}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -620,7 +676,7 @@ function App() {
                                 >
                                   Account Status:{' '}
                                   {
-                                    plexData?.plexUserData
+                                    PlexSession?.plexUserData
                                       ?.subscriptionDescription
                                   }
                                 </Typography>
@@ -631,8 +687,8 @@ function App() {
                                   component="div"
                                 >
                                   Plex Auth Token:{' '}
-                                  {plexData?.plexAuthToken
-                                    ? plexAuthToken
+                                  {PlexSession?.plexAuthToken
+                                    ? PlexSession?.plexAuthToken
                                     : null}
                                 </Typography>
                               </Grid>
@@ -674,8 +730,8 @@ function App() {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {plexData?.plexServers
-                                      ? [...plexData?.plexServers]?.map(
+                                    {PlexSession?.plexServers
+                                      ? [...PlexSession?.plexServers]?.map(
                                           (row) => (
                                             <TableRow
                                               key={row.name}
