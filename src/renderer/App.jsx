@@ -67,14 +67,6 @@ function App() {
   const [activePage, setActivePage] = useState(0);
   const [plexStateTracker, setPlexStateTracker] = useState(0);
 
-  function delay(delayInms) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(2);
-      }, delayInms);
-    });
-  }
-
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
     // console.log('🎉 Dark mode is supported');
   }
@@ -100,13 +92,6 @@ function App() {
 
   console.log('Theme');
   console.log(activeTheme);
-
-  // let PlexSessionData;
-  // try {
-  //   PlexSessionData = JSON.parse(localStorage.getItem('plexSessionData'));
-  // } catch (e) {
-  //   PlexSessionData = null;
-  // }
 
   const PlexSession = new PlexAPIOAuth();
   PlexSession.LoadPlexSession();
@@ -333,15 +318,9 @@ function App() {
     await PlexSession.PlexLogin();
     await PlexSession.GetPlexUserData();
     await PlexSession.GetPlexServers();
+    await PlexSession.GetPlexLibraries();
+    await PlexSession.GetPlexLibraryContent();
 
-    await PlexSession.plexServers.forEach(async (server) => {
-      await PlexSession.GetPlexLibraries(server);
-    });
-    await PlexSession.plexServers.forEach(async (server) => {
-      await server.libraries.forEach(async (library) => {
-        await PlexSession.GetPlexLibraryContent(server, library);
-      });
-    });
     await PlexSession.SavePlexSession();
 
     setPlexStateTracker(plexStateTracker + 1);

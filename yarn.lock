@@ -7665,9 +7665,9 @@
   "version" "1.1.0"
 
 "plex-api-oauth@^1.0.4":
-  "integrity" "sha512-d4SXGeaRhlM1es40AxY+9buejBLmZzoRnwMXrnmwuusWezUNfFZgfdTA6nZq1rmtj4PIKixcMa6WO6KWW1Iasg=="
-  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.0.125.tgz"
-  "version" "1.0.125"
+  "integrity" "sha512-TIwu+KQB1dYZBTLFpEzXN5MWNq348q4rV6zjeQKNkiaxqozoWegxh6mwwix2IeLeFJVGzZPyYIZGrjRXOWmqbQ=="
+  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.0.128.tgz"
+  "version" "1.0.128"
   dependencies:
     "axios" "^0.27.2"
     "plex-oauth" "^2.0.2"
