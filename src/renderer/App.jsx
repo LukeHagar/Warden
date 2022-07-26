@@ -337,9 +337,9 @@ function App() {
     await PlexSession.plexServers.forEach(async (server) => {
       await PlexSession.GetPlexLibraries(server);
     });
-    await PlexSession.plexServers.forEach((server) => {
-      server.libraries.forEach((library) => {
-        PlexSession.GetPlexLibraryContent(server, library);
+    await PlexSession.plexServers.forEach(async (server) => {
+      await server.libraries.forEach(async (library) => {
+        await PlexSession.GetPlexLibraryContent(server, library);
       });
     });
     await PlexSession.SavePlexSession();
