@@ -65,6 +65,15 @@ const iconindex = {
 
 function App() {
   const [activePage, setActivePage] = useState(0);
+  const [plexStateTracker, setPlexStateTracker] = useState(0);
+
+  function delay(delayInms) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(2);
+      }, delayInms);
+    });
+  }
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
     // console.log('🎉 Dark mode is supported');
@@ -89,6 +98,9 @@ function App() {
     });
   }
 
+  console.log('Theme');
+  console.log(activeTheme);
+
   // let PlexSessionData;
   // try {
   //   PlexSessionData = JSON.parse(localStorage.getItem('plexSessionData'));
@@ -96,85 +108,15 @@ function App() {
   //   PlexSessionData = null;
   // }
 
-  function SetSessionData(plexSession, sessionData) {
-    if (Object.keys(sessionData).length !== 0) {
-      console.log(sessionData);
-      plexSession.clientId = sessionData.clientId;
-      plexSession.plexTVAuthToken = sessionData.plexTVAuthToken;
-      plexSession.plexTVUserData = sessionData.plexTVUserData;
-      plexSession.plexServers = sessionData.plexServers;
-      plexSession.plexLibraries = sessionData.plexLibraries;
-      plexSession.plexMovies = sessionData.plexMovies;
-      plexSession.plexMusic = sessionData.plexMusic;
-      plexSession.plexTVShows = sessionData.plexTVShows;
-      plexSession.product = sessionData.product;
-      plexSession.device = sessionData.device;
-      plexSession.version = sessionData.version;
-      plexSession.forwardUrl = sessionData.forwardUrl;
-      plexSession.platform = sessionData.platform;
-      plexSession.plexClientInformation = sessionData.plexClientInformation;
-      return true;
-    }
-    return false;
-  }
-
   const PlexSession = new PlexAPIOAuth();
-  // console.log(PlexSessionData);
-  console.log(PlexSession);
-  try {
-    SetSessionData(
-      PlexSession,
-      JSON.parse(localStorage.getItem('plexSessionData'))
-    );
-  } catch (e) {
-    console.log(e);
-  }
+  PlexSession.LoadPlexSession();
 
-  console.log('No Plex Session found');
-  if (PlexSession.ClientId === '') {
+  if (PlexSession.clientId === '' || PlexSession.clientId == null) {
     PlexSession.GenerateClientId();
   }
   console.log(PlexSession);
-  localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
-  // localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
-  // }
-  // function openInNewTab(url) {
-  //   var win = window.open(url, '_blank');
-  //   win?.focus;
-  // }
 
-  // const [clientId, setClientID] = useState(
-  //   localStorage.getItem('plex-client-id')
-  // );
-  // if (clientId === null) {
-  //   const uuid = uuidv4();
-  //   localStorage.setItem('plex-client-id', uuid);
-  //   setClientID(uuid);
-  // }
-
-  // const [plexData, setPlexData] = useState(
-  //   localStorage.getItem('plex-database')
-  // );
-
-  // console.log('Theme');
-  // console.log(activeTheme);
-
-  // console.log('Auth Token At Creation:');
-  // console.log(plexAuthToken);
-
-  // console.log('Plex User Data At Creation:');
-  // console.log(plexUserData);
-
-  // console.log('Plex Servers At Creation:');
-  // console.log(plexServers);
-
-  // let clientInformation = {
-  //   clientIdentifier: clientId, // This is a unique identifier used to identify your app with Plex.
-  //   product: 'Warden', // Name of your application
-  //   device: '', // The type of device your application is running on
-  //   version: '1', // Version of your application
-  //   forwardUrl: '', // Url to forward back to after signing in.                            // Optional - Platform your application runs on - Defaults to 'Web'
-  // };
+  PlexSession.SavePlexSession();
 
   // function plexLogin() {
   //   let plexOauth = new PlexOauth(clientInformation);
@@ -325,70 +267,6 @@ function App() {
   //     });
   // }
 
-  // function getPlexServers() {
-  //   axios({
-  //     method: 'GET',
-  //     url:
-  //       'https://plex.tv/api/v2/resources?' +
-  //       require('qs').stringify({
-  //         includeHttps: 1,
-  //         includeRelay: 1,
-  //         includeIPv6: 1,
-  //         'X-Plex-Product': clientInformation.product,
-  //         'X-Plex-Client-Identifier': clientId,
-  //         'X-Plex-Token': plexAuthToken,
-  //       }),
-  //     headers: { accept: 'application/json' },
-  //   }).then((response) => {
-  //     console.log('Plex Devices:');
-  //     console.log(response);
-  //     console.log();
-  //     let tempData = plexData;
-  //     tempData.plexServers = response?.data
-  //       ?.filter((obj) => obj.product.includes('Plex Media Server'))
-  //       ?.map((obj) => {
-  //         console.log(obj);
-  //         return {
-  //           accessToken: obj?.accessToken,
-  //           relay: obj?.connections?.filter(
-  //             (ipEntry) => ipEntry?.relay === true
-  //           ),
-  //           local: obj?.connections?.filter(
-  //             (ipEntry) => ipEntry?.local === true
-  //           ),
-  //         };
-  //       });
-  //   });
-
-  //   setPlexData(tempData);
-  // }
-
-  // function getPlexLibraries() {
-  //   let tempData = plexData;
-  //   plexData?.plexServers?.map((server) => {
-  //     server?.relay?.map((relay) =>
-  //       axios({
-  //         method: 'GET',
-  //         url:
-  //           relay.address +
-  //           '/library/sections/?' +
-  //           require('qs').stringify({
-  //             'X-Plex-Token': server.accessToken,
-  //           }),
-  //         headers: { accept: 'application/json' },
-  //       }).then((response) => {
-  //         response?.data?.MediaContainer?.Directory?.map((entry) => {
-  //           if (tempData.plexServers.some((e) => e.uuid === entry.uuid)) {
-  //           } else {
-  //             tempData.plexServers = [...tempData.plexServers, entry];
-  //           }
-  //         });
-  //       })
-  //     );
-  //   });
-  //   setPlexData(tempData);
-  // }
-
   // function savePlexState() {
   //   if (plexData === null) {
   //     plexLogin();
@@ -445,16 +323,28 @@ function App() {
   // console.log('Plex DataBase');
   // console.log(plexData);
 
-  console.log(PlexSession);
+  // console.log(PlexSession);
 
-  useEffect(() => PlexSession.PlexLogin(), []);
+  // useEffect(() => PlexSession.PlexLogin(), []);
 
-  PlexSession.GetPlexUserData();
+  // // PlexSession.GetPlexUserData();
 
-  function PlexLoginButton() {
-    PlexSession.PlexLogin();
-    PlexSession.GetPlexUserData();
-    window.localStorage.setItem('plexSessionData', JSON.stringify(PlexSession));
+  async function PlexLoginButton() {
+    await PlexSession.PlexLogin();
+    await PlexSession.GetPlexUserData();
+    await PlexSession.GetPlexServers();
+
+    await PlexSession.plexServers.forEach(async (server) => {
+      await PlexSession.GetPlexLibraries(server);
+    });
+    await PlexSession.plexServers.forEach((server) => {
+      server.libraries.forEach((library) => {
+        PlexSession.GetPlexLibraryContent(server, library);
+      });
+    });
+    await PlexSession.SavePlexSession();
+
+    setPlexStateTracker(plexStateTracker + 1);
   }
 
   function isHidden(id) {
@@ -515,7 +405,7 @@ function App() {
                 <ListItemText primary="Libraries" />
               </ListItemButton>
             </ListItem>
-            {PlexSession?.plexMusicLibraries?.map((obj) => (
+            {PlexSession?.plexMusic?.map((obj) => (
               <ListItem key={obj.uuid} disablePadding>
                 <ListItemButton>
                   <ListItemIcon>{iconindex.Library}</ListItemIcon>
@@ -612,8 +502,8 @@ function App() {
                       <CardHeader
                         avatar={
                           <Avatar
-                            alt={PlexSession?.plexUserData?.friendlyName}
-                            src={PlexSession?.plexUserData?.thumb}
+                            alt={PlexSession?.plexTVUserData?.friendlyName}
+                            src={PlexSession?.plexTVUserData?.thumb}
                             sx={{ width: 56, height: 56 }}
                           />
                         }
@@ -634,8 +524,8 @@ function App() {
                         }
                         title="Plex Account"
                         subheader={
-                          `Username: ${PlexSession?.plexUserData?.username}`
-                            ? PlexSession?.plexUserData?.username
+                          `Username: ${PlexSession?.plexTVUserData?.username}`
+                            ? PlexSession?.plexTVUserData?.username
                             : null
                         }
                       />
@@ -658,7 +548,7 @@ function App() {
                                   component="div"
                                 >
                                   Username:{' '}
-                                  {PlexSession?.plexUserData?.username}
+                                  {PlexSession?.plexTVUserData?.username}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -666,7 +556,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Email: {PlexSession?.plexUserData?.email}
+                                  Email: {PlexSession?.plexTVUserData?.email}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -676,7 +566,7 @@ function App() {
                                 >
                                   Account Status:{' '}
                                   {
-                                    PlexSession?.plexUserData
+                                    PlexSession?.plexTVUserData
                                       ?.subscriptionDescription
                                   }
                                 </Typography>
@@ -687,8 +577,8 @@ function App() {
                                   component="div"
                                 >
                                   Plex Auth Token:{' '}
-                                  {PlexSession?.plexAuthToken
-                                    ? PlexSession?.plexAuthToken
+                                  {PlexSession?.plexTVAuthToken
+                                    ? PlexSession?.plexTVAuthToken
                                     : null}
                                 </Typography>
                               </Grid>
@@ -730,42 +620,34 @@ function App() {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {PlexSession?.plexServers
-                                      ? [...PlexSession?.plexServers]?.map(
-                                          (row) => (
-                                            <TableRow
-                                              key={row.name}
-                                              sx={{
-                                                '&:last-child td, &:last-child th':
-                                                  {
-                                                    border: 0,
-                                                  },
-                                              }}
-                                            >
-                                              <TableCell
-                                                component="th"
-                                                scope="row"
-                                              >
-                                                {row?.name}
-                                              </TableCell>
-                                              <TableCell align="right">
-                                                {row?.publicAddress}
-                                              </TableCell>
-                                              <TableCell align="right">
-                                                {row?.platform}
-                                              </TableCell>
-                                              <TableCell align="right">
-                                                {row?.owned ? 'Yes' : 'No'}
-                                              </TableCell>
-                                              <TableCell align="right">
-                                                {row?.publicAddressMatches
-                                                  ? 'Local'
-                                                  : 'Remote'}
-                                              </TableCell>
-                                            </TableRow>
-                                          )
-                                        )
-                                      : null}
+                                    {PlexSession?.plexServers?.map((row) => (
+                                      <TableRow
+                                        key={row.name}
+                                        sx={{
+                                          '&:last-child td, &:last-child th': {
+                                            border: 0,
+                                          },
+                                        }}
+                                      >
+                                        <TableCell component="th" scope="row">
+                                          {row?.name}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.publicAddress}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.platform}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.owned ? 'Yes' : 'No'}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.publicAddressMatches
+                                            ? 'Local'
+                                            : 'Remote'}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
                                   </TableBody>
                                 </Table>
                               </TableContainer>
