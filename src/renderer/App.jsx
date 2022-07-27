@@ -52,7 +52,7 @@ import axios from 'axios';
 import ReactJkMusicPlayer from 'react-jinke-music-player';
 import XMLParser from 'react-xml-parser';
 import ipaddr from 'ipaddr.js';
-import { PlexAPIOAuth, PlexLogin, ValidatePlexAuthToken } from 'plex-api-oauth';
+import { PlexAPIOAuth } from 'plex-api-oauth';
 
 const drawerWidth = 240;
 
@@ -319,7 +319,14 @@ function App() {
     await PlexSession.GetPlexUserData();
     await PlexSession.GetPlexServers();
     await PlexSession.GetPlexLibraries();
-    await PlexSession.GetPlexLibraryContent();
+
+    await PlexSession.SavePlexSession();
+
+    setPlexStateTracker(plexStateTracker + 1);
+  }
+
+  async function PlexLogoutButton() {
+    await PlexSession.PlexLogout();
 
     await PlexSession.SavePlexSession();
 
@@ -497,7 +504,12 @@ function App() {
                               </Button>
                             </Grid>
                             <Grid item xs={5}>
-                              <Button variant="outlined">Logout</Button>
+                              <Button
+                                onClick={() => PlexLogoutButton()}
+                                variant="outlined"
+                              >
+                                Logout
+                              </Button>
                             </Grid>
                           </Grid>
                         }
