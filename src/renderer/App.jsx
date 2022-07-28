@@ -499,11 +499,11 @@ function App() {
                           </Grid>
                         }
                         title="Plex Account"
-                        subheader={
-                          `Username: ${PlexSession?.plexTVUserData?.username}`
+                        subheader={`Username: ${
+                          PlexSession?.plexTVUserData?.username
                             ? PlexSession?.plexTVUserData?.username
                             : null
-                        }
+                        }`}
                       />
                       <CardContent>
                         <Accordion
