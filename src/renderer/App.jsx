@@ -1,3 +1,4 @@
+/* eslint-disable react/no-array-index-key */
 /* eslint-disable prefer-template */
 import * as React from 'react';
 import { useState, useEffect } from 'react';
@@ -51,10 +52,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import axios from 'axios';
 import ReactJkMusicPlayer from 'react-jinke-music-player';
 import XMLParser from 'react-xml-parser';
-import ipaddr from 'ipaddr.js';
 import { PlexAPIOAuth } from 'plex-api-oauth';
 import qs from 'qs';
 import NoArt from './noart.png';
@@ -68,10 +67,21 @@ const iconindex = {
   Settings: <SettingsIcon />,
 };
 
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index;
+}
+
 function App() {
   const [activePage, setActivePage] = useState(0);
   const [activeArtist, setActiveArtist] = useState();
+  const [activeAlbum, setActiveAlbum] = useState();
   const [plexStateTracker, setPlexStateTracker] = useState(0);
+
+  const [plexServers, setPlexServers] = useState([]);
+  const [plexLibraries, setPlexLibraries] = useState([]);
+  const [artists, setArtists] = useState([]);
+  const [albums, setAlbums] = useState([]);
+  const [songs, setSongs] = useState([]);
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
     // console.log('🎉 Dark mode is supported');
@@ -106,17 +116,18 @@ function App() {
     PlexSession.GenerateClientId();
     PlexSession.SavePlexSession();
   }
-  console.log(PlexSession);
 
   async function PlexLoginButton() {
     await PlexSession.PlexLogin();
     await PlexSession.GetPlexUserData();
     await PlexSession.GetPlexServers();
     await PlexSession.GetPlexLibraries();
-    await PlexSession.GetPlexMusicLibraryContent();
     await PlexSession.SavePlexSession();
-
-    setPlexStateTracker(plexStateTracker + 1);
+    setPlexServers(await PlexSession.GetPlexServers());
+    setPlexLibraries(await PlexSession.GetPlexLibraries());
+    setAlbums(await PlexSession.GetPlexAlbums());
+    setArtists(await PlexSession.GetPlexArtists());
+    setSongs(await PlexSession.GetPlexSongs());
   }
 
   async function PlexLogoutButton() {
@@ -170,50 +181,50 @@ function App() {
           </Toolbar>
           <Divider />
           <List>
-            <ListItem key="Home" disablePadding>
+            <ListItem key="HomeTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(0)}>
                 <ListItemIcon>{iconindex.Home}</ListItemIcon>
                 <ListItemText primary="Home" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Libraries" disablePadding>
+            <ListItem key="LibrariesTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(1)}>
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Libraries" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Libraries" disablePadding>
+            <ListItem key="ArtistsTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(2)}>
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Artists" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Libraries" disablePadding>
+            <ListItem key="AlbumsTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(3)}>
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Albums" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Libraries" disablePadding>
+            <ListItem key="SongsTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(4)}>
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Songs" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Playlists" disablePadding>
+            <ListItem key="PlaylistsTab" disablePadding>
               <ListItemButton onClick={() => setActivePage(5)}>
                 <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
                 <ListItemText primary="Playlists" />
               </ListItemButton>
             </ListItem>
             <Divider />
-            <ListItem key="Settings" disablePadding>
-              <ListItemButton onClick={() => setActivePage(3)}>
+            <ListItem key="SettingsTab" disablePadding>
+              <ListItemButton onClick={() => setActivePage(6)}>
                 <ListItemIcon>{iconindex.Settings}</ListItemIcon>
                 <ListItemText primary="Settings" />
               </ListItemButton>
@@ -227,7 +238,7 @@ function App() {
           label="Home"
           TransitionProps={{
             unmountOnExit: true,
-            mountOnEnter: true,
+
             timeout: 200,
           }}
         >
@@ -243,183 +254,180 @@ function App() {
           label="Library"
         >
           <Toolbar />
-          <Accordion
-            TransitionProps={{
-              unmountOnExit: true,
-              mountOnEnter: true,
-              timeout: 400,
-            }}
-          >
-            <AccordionSummary>
-              <Typography variant="h3">Artists</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{}}>
-                <Grid container spacing={2}>
-                  {PlexSession?.plexArtistLibraries?.map((Obj) => (
-                    <Grid item xs={3} key={Obj.guid}>
-                      <Card>
-                        <CardActionArea
-                          onClick={() => {
-                            setActivePage(4);
-                            setActiveArtist(Obj);
-                          }}
-                        >
-                          <CardMedia
-                            component="img"
-                            height="240"
-                            image={
-                              Obj.server.relayConnections[0].uri +
-                                '/photo/:/transcode?' +
-                                qs.stringify({
-                                  width: 240,
-                                  height: 240,
-                                  minSize: 1,
-                                  upscale: 1,
-                                  url:
-                                    Obj.thumb +
-                                    '?X-Plex-Token=' +
-                                    Obj.server.accessToken,
-                                  'X-Plex-Token': Obj.server.accessToken,
-                                }) || NoArt
-                            }
-                            onError={({ currentTarget }) => {
-                              currentTarget.onerror = null; // prevents looping
-                              currentTarget.src = NoArt;
-                            }}
-                          />
-                          <CardContent>
-                            <Typography>{Obj.title}</Typography>
-                          </CardContent>
-                        </CardActionArea>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-          <Accordion
-            TransitionProps={{
-              unmountOnExit: true,
-              mountOnEnter: true,
-              timeout: 200,
-            }}
-          >
-            <AccordionSummary>
-              <Typography variant="h3">Albums</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{}}>
-                <Grid container spacing={2}>
-                  {PlexSession?.plexArtistLibraries?.map((Obj) => (
-                    <Grid item xs={3} key={Obj.guid}>
-                      <Card>
-                        <CardActionArea
-                          onClick={() => {
-                            setActivePage(4);
-                            setActiveArtist(Obj);
-                          }}
-                        >
-                          <CardMedia
-                            component="img"
-                            height="240"
-                            image={
-                              Obj.server.relayConnections[0].uri +
-                                '/photo/:/transcode?' +
-                                qs.stringify({
-                                  width: 240,
-                                  height: 240,
-                                  minSize: 1,
-                                  upscale: 1,
-                                  url:
-                                    Obj.thumb +
-                                    '?X-Plex-Token=' +
-                                    Obj.server.accessToken,
-                                  'X-Plex-Token': Obj.server.accessToken,
-                                }) || NoArt
-                            }
-                            onError={({ currentTarget }) => {
-                              currentTarget.onerror = null; // prevents looping
-                              currentTarget.src = NoArt;
-                            }}
-                          />
-                          <CardContent>
-                            <Typography>{Obj.title}</Typography>
-                          </CardContent>
-                        </CardActionArea>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            </AccordionDetails>
-          </Accordion>
-          <Accordion
-            TransitionProps={{
-              unmountOnExit: true,
-              mountOnEnter: true,
-              timeout: 200,
-            }}
-          >
-            <AccordionSummary>
-              <Typography variant="h3">Songs</Typography>
-            </AccordionSummary>
-            <AccordionDetails>
-              <Box sx={{}}>
-                <Grid container spacing={2}>
-                  {PlexSession?.plexSongLibraries?.map((Obj) => (
-                    <Grid item xs={3} key={Obj.guid}>
-                      <Card>
-                        <CardActionArea
-                          onClick={() => {
-                            setActivePage(4);
-                            setActiveArtist(Obj);
-                          }}
-                        >
-                          <CardMedia
-                            component="img"
-                            height="240"
-                            image={
-                              Obj.server.relayConnections[0].uri +
-                                '/photo/:/transcode?' +
-                                qs.stringify({
-                                  width: 240,
-                                  height: 240,
-                                  minSize: 1,
-                                  upscale: 1,
-                                  url:
-                                    Obj.thumb +
-                                    '?X-Plex-Token=' +
-                                    Obj.server.accessToken,
-                                  'X-Plex-Token': Obj.server.accessToken,
-                                }) || NoArt
-                            }
-                            onError={({ currentTarget }) => {
-                              currentTarget.onerror = null; // prevents looping
-                              currentTarget.src = NoArt;
-                            }}
-                          />
-                          <CardContent>
-                            <Typography>{Obj.title}</Typography>
-                          </CardContent>
-                        </CardActionArea>
-                      </Card>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            </AccordionDetails>
-          </Accordion>
         </Box>
         <Box
           hidden={isHidden(2)}
           component="main"
           sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Artists"
+          TransitionProps={{
+            timeout: 100,
+          }}
+        >
+          <Toolbar />
+          <Box sx={{}}>
+            <Grid container spacing={2}>
+              {artists.filter(onlyUnique)?.map((Obj, index) => (
+                <Grid item xs={2} key={Obj.guid + index}>
+                  <Card>
+                    <CardActionArea
+                      onClick={() => {
+                        setActivePage();
+                        setActiveArtist(Obj);
+                      }}
+                    >
+                      <CardMedia
+                        loading="lazy"
+                        component="img"
+                        height="240"
+                        image={
+                          Obj.server.preferredConnection.uri +
+                            '/photo/:/transcode?' +
+                            qs.stringify({
+                              width: 240,
+                              height: 240,
+                              minSize: 1,
+                              upscale: 1,
+                              url:
+                                Obj.thumb +
+                                '?X-Plex-Token=' +
+                                Obj.server.accessToken,
+                              'X-Plex-Token': Obj.server.accessToken,
+                            }) || NoArt
+                        }
+                        onError={({ currentTarget }) => {
+                          currentTarget.onerror = null; // prevents looping
+                          currentTarget.src = NoArt;
+                        }}
+                      />
+                      <CardContent>
+                        <Typography noWrap>{Obj.title}</Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </Box>
+        <Box
+          hidden={isHidden(3)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Albums"
+          TransitionProps={{
+            timeout: 100,
+          }}
+        >
+          <Toolbar />
+          <Box sx={{}} loading="lazy">
+            <Grid container spacing={2}>
+              {albums.filter(onlyUnique)?.map((Obj, index) => (
+                <Grid item xs={2} key={Obj.guid + index}>
+                  <Card>
+                    <CardActionArea
+                      onClick={() => {
+                        setActivePage(4);
+                        setActiveArtist(Obj);
+                      }}
+                    >
+                      <CardMedia
+                        loading="lazy"
+                        component="img"
+                        height="240"
+                        image={
+                          Obj.server.preferredConnection.uri +
+                            '/photo/:/transcode?' +
+                            qs.stringify({
+                              width: 240,
+                              height: 240,
+                              minSize: 1,
+                              upscale: 1,
+                              url:
+                                Obj.thumb +
+                                '?X-Plex-Token=' +
+                                Obj.server.accessToken,
+                              'X-Plex-Token': Obj.server.accessToken,
+                            }) || NoArt
+                        }
+                        onError={({ currentTarget }) => {
+                          currentTarget.onerror = null; // prevents looping
+                          currentTarget.src = NoArt;
+                        }}
+                      />
+                      <CardContent>
+                        <Typography noWrap>{Obj.title}</Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </Box>
+        <Box
+          hidden={isHidden(4)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Songs"
+          TransitionProps={{
+            timeout: 100,
+          }}
+        >
+          <Toolbar />
+          <Box sx={{}}>
+            <Grid container spacing={2}>
+              {songs.filter(onlyUnique)?.map((Obj, index) => (
+                <Grid item xs={2} key={Obj.guid + '-' + index}>
+                  <Card>
+                    <CardActionArea
+                      onClick={() => {
+                        setActivePage(4);
+                        setActiveArtist(Obj);
+                      }}
+                    >
+                      <CardMedia
+                        loading="lazy"
+                        component="img"
+                        height="240"
+                        image={
+                          Obj.server.preferredConnection.uri +
+                            '/photo/:/transcode?' +
+                            qs.stringify({
+                              width: 240,
+                              height: 240,
+                              minSize: 1,
+                              upscale: 1,
+                              url:
+                                Obj.thumb +
+                                '?X-Plex-Token=' +
+                                Obj.server.accessToken,
+                              'X-Plex-Token': Obj.server.accessToken,
+                            }) || NoArt
+                        }
+                        onError={({ currentTarget }) => {
+                          currentTarget.onerror = null; // prevents looping
+                          currentTarget.src = NoArt;
+                        }}
+                      />
+                      <CardContent>
+                        <Typography noWrap>{Obj.title}</Typography>
+                      </CardContent>
+                    </CardActionArea>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          </Box>
+        </Box>
+        <Box
+          hidden={isHidden(5)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
           label="Playlists"
           TransitionProps={{
             unmountOnExit: true,
-            mountOnEnter: true,
+
             timeout: 100,
           }}
         >
@@ -429,13 +437,13 @@ function App() {
           </Typography>
         </Box>
         <Box
-          hidden={isHidden(3)}
+          hidden={isHidden(6)}
           component="main"
           sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
           label="Settings"
           TransitionProps={{
             unmountOnExit: true,
-            mountOnEnter: true,
+
             timeout: 100,
           }}
         >
@@ -510,7 +518,6 @@ function App() {
                           variant="dense"
                           TransitionProps={{
                             unmountOnExit: true,
-                            mountOnEnter: true,
                           }}
                         >
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -633,66 +640,8 @@ function App() {
                                   </TableBody>
                                 </Table>
                               </TableContainer>
-                              {/* {plexServers
-                                ? [...plexServers]?.map((entry) => (
-                                    <Grid item xs={12}>
-                                      <Typography
-                                        key={entry.name}
-                                        sx={{ flexGrow: 1 }}
-                                        component="div"
-                                      >
-                                        {entry.attributes?.name +
-                                          ' - ' +
-                                          entry.attributes?.platform +
-                                          ' - Internal:(' +
-                                          '   ' +
-                                          entry.children
-                                            ?.filter((obj) =>
-                                              ipaddr
-                                                .parse(
-                                                  obj.attributes.uri
-                                                    .replace('http://', '')
-                                                    .replace(':32400', '')
-                                                )
-                                                .range()
-                                                .includes('private')
-                                            )
-                                            ?.map(
-                                              (entry) =>
-                                                ' ' +
-                                                entry.attributes.uri
-                                                  .replace('http://', '')
-                                                  .replace(':32400', '')
-                                            ) +
-                                          ' )   ' +
-                                          ' - External:(' +
-                                          '   ' +
-                                          entry.children
-                                            ?.filter((obj) =>
-                                              ipaddr
-                                                .parse(
-                                                  obj.attributes.uri
-                                                    .replace('http://', '')
-                                                    .replace(':32400', '')
-                                                )
-                                                .range()
-                                                .includes('unicast')
-                                            )
-                                            ?.map(
-                                              (entry) =>
-                                                ' ' +
-                                                entry.attributes.uri
-                                                  .replace('http://', '')
-                                                  .replace(':32400', '') +
-                                                ' )   '
-                                            )}
-                                      </Typography>
-                                    </Grid>
-                                  ))
-                                : null} */}
                             </Grid>
                           </AccordionDetails>
-                          <AccordionActions></AccordionActions>
                         </Accordion>
                       </CardContent>
                     </Card>
@@ -701,37 +650,6 @@ function App() {
               </Grid>
             </Grid>
           </Grid>
-        </Box>
-        <Box
-          hidden={isHidden(4)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Playlists"
-          TransitionProps={{
-            unmountOnExit: true,
-            mountOnEnter: true,
-            timeout: 100,
-          }}
-        >
-          <Toolbar />
-          <Typography>{activeArtist?.title}</Typography>
-          <List></List>
-        </Box>
-        <Box
-          hidden={isHidden(5)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Playlists"
-          TransitionProps={{
-            unmountOnExit: true,
-            mountOnEnter: true,
-            timeout: 100,
-          }}
-        >
-          <Toolbar />
-          <Typography paragraph>
-            This will be the Album page of my App
-          </Typography>
         </Box>
       </Box>
     </ThemeProvider>
