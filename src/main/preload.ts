@@ -24,7 +24,3 @@ contextBridge.exposeInMainWorld('darkMode', {
   toggle: () => ipcRenderer.invoke('dark-mode:toggle'),
   system: () => ipcRenderer.invoke('dark-mode:system'),
 });
-
-contextBridge.exposeInMainWorld('plex', {
-  login: () => ipcRenderer.invoke('plex:login'),
-});

@@ -1,3 +1,4 @@
+/* eslint-disable prefer-template */
 import * as React from 'react';
 import { useState, useEffect } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
@@ -33,8 +34,10 @@ import {
   Avatar,
   Button,
   Card,
+  CardActionArea,
   CardContent,
   CardHeader,
+  CardMedia,
   Grid,
   Icon,
   IconButton,
@@ -53,6 +56,8 @@ import ReactJkMusicPlayer from 'react-jinke-music-player';
 import XMLParser from 'react-xml-parser';
 import ipaddr from 'ipaddr.js';
 import { PlexAPIOAuth } from 'plex-api-oauth';
+import qs from 'qs';
+import NoArt from './noart.png';
 
 const drawerWidth = 240;
 
@@ -65,6 +70,7 @@ const iconindex = {
 
 function App() {
   const [activePage, setActivePage] = useState(0);
+  const [activeArtist, setActiveArtist] = useState();
   const [plexStateTracker, setPlexStateTracker] = useState(0);
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
@@ -98,228 +104,16 @@ function App() {
 
   if (PlexSession.clientId === '' || PlexSession.clientId == null) {
     PlexSession.GenerateClientId();
+    PlexSession.SavePlexSession();
   }
   console.log(PlexSession);
-
-  PlexSession.SavePlexSession();
-
-  // function plexLogin() {
-  //   let plexOauth = new PlexOauth(clientInformation);
-  //   // Get hosted UI URL and Pin Id
-
-  //   plexOauth
-  //     .requestHostedLoginURL()
-  //     .then((data) => {
-  //       let [hostedUILink, pinId] = data;
-
-  //       openInNewTab(hostedUILink);
-
-  //       console.log('Plex Auth URL:');
-  //       console.log(hostedUILink); // UI URL used to log into Plex
-  //       console.log('Plex Pin ID:');
-  //       console.log(pinId);
-  //       /*
-  //        * You can now navigate the user's browser to the 'hostedUILink'. This will include the forward URL
-  //        * for your application, so when they have finished signing into Plex, they will be redirected back
-  //        * to the specified URL. From there, you just need to perform a query to check for the auth token.
-  //        * (See Below)
-  //        */
-
-  //       // Check for the auth token, once returning to the application
-
-  //       plexOauth
-  //         .checkForAuthToken(pinId, 1000, 10)
-  //         .then((authToken) => {
-  //           console.log('Plex Auth Token:');
-  //           console.log(authToken); // Returns the auth token if set, otherwise returns null
-  //           if (authToken !== null) {
-  //             validatePlexAuthToken(authToken);
-  //           }
-
-  //           // An auth token will only be null if the user never signs into the hosted UI, or you stop checking for a new one before they can log in
-  //         })
-
-  //         .catch((err) => {
-  //           throw err;
-  //         });
-  //     })
-  //     .catch((err) => {
-  //       throw err;
-  //     });
-  // }
-
-  // function validatePlexAuthToken(authToken) {
-  //   axios({
-  //     method: 'GET',
-  //     url:
-  //       'https://plex.tv/api/v2/user?' +
-  //       require('qs').stringify({
-  //         'X-Plex-Product': clientInformation.product,
-  //         'X-Plex-Client-Identifier': clientId,
-  //         'X-Plex-Token': authToken,
-  //       }),
-  //     headers: { accept: 'application/json' },
-  //   })
-  //     .then((response) => {
-  //       console.log(response);
-  //       console.log(response.status);
-  //       if (response.status === 200) {
-  //         let tempData = plexData;
-  //         tempData.plexUserData = response.data;
-  //         tempData.plexAuthToken = authToken;
-  //         setPlexData(tempData);
-  //         getPlexServers();
-  //         getPlexLibraries();
-  //         getPlexMusicLibraries();
-  //         savePlexState();
-  //       }
-  //       if (response.status === 401) {
-  //       }
-  //     })
-  //     .catch(function (error) {
-  //       if (error.response) {
-  //         // The request was made and the server responded with a status code
-  //         // that falls out of the range of 2xx
-  //         console.log(error.response.data);
-  //         console.log(error.response.status);
-  //         console.log(error.response.headers);
-  //       } else if (error.request) {
-  //         // The request was made but no response was received
-  //         // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-  //         // http.ClientRequest in node.js
-  //         console.log(error.request);
-  //       } else {
-  //         // Something happened in setting up the request that triggered an Error
-  //         console.log('Error', error.message);
-  //       }
-  //       console.log(error.config);
-  //     });
-  // }
-
-  // function plexLogout() {
-  //   localStorage.setItem('plex-database', null);
-  //   setPlexData({
-  //     plexAuthToken: null,
-  //     plexUserData: null,
-  //     plexServers: null,
-  //     plexLibraries: null,
-  //     plexMusicLibraries: null,
-  //   });
-  // }
-
-  // function testPlexServer(ipAddress, accessToken) {
-  //   obj?.connections
-  //     ?.filter((ipEntry) => ipEntry?.local === true)
-  //     ?.map((localIP) => {
-  //       console.log(localIP);
-  //       axios({
-  //         method: 'GET',
-  //         timeout: 100,
-  //         url:
-  //           'http://' +
-  //           localIP.address +
-  //           ':32400?' +
-  //           require('qs').stringify({
-  //             'X-Plex-Token': obj?.accessToken,
-  //           }),
-  //       })
-  //         .catch(function (error) {
-  //           if (error.response) {
-  //             // The request was made and the server responded with a status code
-  //             // that falls out of the range of 2xx
-  //             console.log(error.response.data);
-  //             console.log(error.response.status);
-  //             console.log(error.response.headers);
-  //           } else if (error.request) {
-  //             // The request was made but no response was received
-  //             // `error.request` is an instance of XMLHttpRequest in the browser and an instance of
-  //             // http.ClientRequest in node.js
-  //             console.log(error.request);
-  //           } else {
-  //             // Something happened in setting up the request that triggered an Error
-  //             console.log('Error', error.message);
-  //           }
-  //           console.log(error.config);
-  //         })
-  //         .then((response) => {
-  //           console.log();
-  //           if (response?.status === 200) {
-  //             localArray = [...localArray, localIP];
-  //           } else {
-  //             return null;
-  //           }
-  //         });
-  //     });
-  // }
-
-  // function savePlexState() {
-  //   if (plexData === null) {
-  //     plexLogin();
-  //   } else {
-  //     localStorage.setItem('plex-database', plexData);
-  //     console.log('Plex Database:');
-  //     console.log(localStorage.getItem('plex-database'));
-  //   }
-  // }
-
-  // function getPlexMusicLibraries() {
-  //   setPlexMusicLibraries(
-  //     plexLibraries?.filter((obj) => obj?.type === 'artist')
-  //   );
-  // }
-
-  // if (plexData.authToken !== null) {
-  //   console.log(plexData.authToken);
-  //   validatePlexAuthToken(plexData.authToken);
-  // } else {
-  //   plexLogout();
-  // }
-
-  // if (!authToken) {
-  //   plexLogin();
-  // }
-  // if (!plexUserData) {
-  //   validatePlexAuthToken();
-  // }
-  // if (!plexServers) {
-  //   getPlexServers();
-  // }
-
-  // console.log('Main Body');
-
-  // console.log('clientId:');
-  // console.log(clientId);
-
-  // console.log('Plex Auth Token:');
-  // console.log(plexAuthToken);
-
-  // console.log('Plex User Data:');
-  // console.log(plexUserData);
-
-  // console.log('Plex Servers:');
-  // console.log(plexServers);
-
-  // console.log('Plex Libraries:');
-  // console.log(plexLibraries);
-
-  // console.log('Plex Music Libraries:');
-  // console.log(plexMusicLibraries);
-
-  // console.log('Plex DataBase');
-  // console.log(plexData);
-
-  // console.log(PlexSession);
-
-  // useEffect(() => PlexSession.PlexLogin(), []);
-
-  // // PlexSession.GetPlexUserData();
 
   async function PlexLoginButton() {
     await PlexSession.PlexLogin();
     await PlexSession.GetPlexUserData();
     await PlexSession.GetPlexServers();
     await PlexSession.GetPlexLibraries();
-
+    await PlexSession.GetPlexMusicLibraryContent();
     await PlexSession.SavePlexSession();
 
     setPlexStateTracker(plexStateTracker + 1);
@@ -327,9 +121,7 @@ function App() {
 
   async function PlexLogoutButton() {
     await PlexSession.PlexLogout();
-
     await PlexSession.SavePlexSession();
-
     setPlexStateTracker(plexStateTracker + 1);
   }
 
@@ -391,17 +183,30 @@ function App() {
                 <ListItemText primary="Libraries" />
               </ListItemButton>
             </ListItem>
-            {PlexSession?.plexMusic?.map((obj) => (
-              <ListItem key={obj.uuid} disablePadding>
-                <ListItemButton>
-                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
-                  <ListItemText primary={obj.title} />
-                </ListItemButton>
-              </ListItem>
-            ))}
+            <Divider />
+            <ListItem key="Libraries" disablePadding>
+              <ListItemButton onClick={() => setActivePage(2)}>
+                <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                <ListItemText primary="Artists" />
+              </ListItemButton>
+            </ListItem>
+            <Divider />
+            <ListItem key="Libraries" disablePadding>
+              <ListItemButton onClick={() => setActivePage(3)}>
+                <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                <ListItemText primary="Albums" />
+              </ListItemButton>
+            </ListItem>
+            <Divider />
+            <ListItem key="Libraries" disablePadding>
+              <ListItemButton onClick={() => setActivePage(4)}>
+                <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                <ListItemText primary="Songs" />
+              </ListItemButton>
+            </ListItem>
             <Divider />
             <ListItem key="Playlists" disablePadding>
-              <ListItemButton onClick={() => setActivePage(2)}>
+              <ListItemButton onClick={() => setActivePage(5)}>
                 <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
                 <ListItemText primary="Playlists" />
               </ListItemButton>
@@ -420,6 +225,11 @@ function App() {
           component="main"
           sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
           label="Home"
+          TransitionProps={{
+            unmountOnExit: true,
+            mountOnEnter: true,
+            timeout: 200,
+          }}
         >
           <Toolbar />
           <Typography paragraph>
@@ -433,15 +243,185 @@ function App() {
           label="Library"
         >
           <Toolbar />
-          <Typography paragraph>
-            This will be the Library page of my App
-          </Typography>
+          <Accordion
+            TransitionProps={{
+              unmountOnExit: true,
+              mountOnEnter: true,
+              timeout: 400,
+            }}
+          >
+            <AccordionSummary>
+              <Typography variant="h3">Artists</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{}}>
+                <Grid container spacing={2}>
+                  {PlexSession?.plexArtistLibraries?.map((Obj) => (
+                    <Grid item xs={3} key={Obj.guid}>
+                      <Card>
+                        <CardActionArea
+                          onClick={() => {
+                            setActivePage(4);
+                            setActiveArtist(Obj);
+                          }}
+                        >
+                          <CardMedia
+                            component="img"
+                            height="240"
+                            image={
+                              Obj.server.relayConnections[0].uri +
+                                '/photo/:/transcode?' +
+                                qs.stringify({
+                                  width: 240,
+                                  height: 240,
+                                  minSize: 1,
+                                  upscale: 1,
+                                  url:
+                                    Obj.thumb +
+                                    '?X-Plex-Token=' +
+                                    Obj.server.accessToken,
+                                  'X-Plex-Token': Obj.server.accessToken,
+                                }) || NoArt
+                            }
+                            onError={({ currentTarget }) => {
+                              currentTarget.onerror = null; // prevents looping
+                              currentTarget.src = NoArt;
+                            }}
+                          />
+                          <CardContent>
+                            <Typography>{Obj.title}</Typography>
+                          </CardContent>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion
+            TransitionProps={{
+              unmountOnExit: true,
+              mountOnEnter: true,
+              timeout: 200,
+            }}
+          >
+            <AccordionSummary>
+              <Typography variant="h3">Albums</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{}}>
+                <Grid container spacing={2}>
+                  {PlexSession?.plexArtistLibraries?.map((Obj) => (
+                    <Grid item xs={3} key={Obj.guid}>
+                      <Card>
+                        <CardActionArea
+                          onClick={() => {
+                            setActivePage(4);
+                            setActiveArtist(Obj);
+                          }}
+                        >
+                          <CardMedia
+                            component="img"
+                            height="240"
+                            image={
+                              Obj.server.relayConnections[0].uri +
+                                '/photo/:/transcode?' +
+                                qs.stringify({
+                                  width: 240,
+                                  height: 240,
+                                  minSize: 1,
+                                  upscale: 1,
+                                  url:
+                                    Obj.thumb +
+                                    '?X-Plex-Token=' +
+                                    Obj.server.accessToken,
+                                  'X-Plex-Token': Obj.server.accessToken,
+                                }) || NoArt
+                            }
+                            onError={({ currentTarget }) => {
+                              currentTarget.onerror = null; // prevents looping
+                              currentTarget.src = NoArt;
+                            }}
+                          />
+                          <CardContent>
+                            <Typography>{Obj.title}</Typography>
+                          </CardContent>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
+          <Accordion
+            TransitionProps={{
+              unmountOnExit: true,
+              mountOnEnter: true,
+              timeout: 200,
+            }}
+          >
+            <AccordionSummary>
+              <Typography variant="h3">Songs</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Box sx={{}}>
+                <Grid container spacing={2}>
+                  {PlexSession?.plexSongLibraries?.map((Obj) => (
+                    <Grid item xs={3} key={Obj.guid}>
+                      <Card>
+                        <CardActionArea
+                          onClick={() => {
+                            setActivePage(4);
+                            setActiveArtist(Obj);
+                          }}
+                        >
+                          <CardMedia
+                            component="img"
+                            height="240"
+                            image={
+                              Obj.server.relayConnections[0].uri +
+                                '/photo/:/transcode?' +
+                                qs.stringify({
+                                  width: 240,
+                                  height: 240,
+                                  minSize: 1,
+                                  upscale: 1,
+                                  url:
+                                    Obj.thumb +
+                                    '?X-Plex-Token=' +
+                                    Obj.server.accessToken,
+                                  'X-Plex-Token': Obj.server.accessToken,
+                                }) || NoArt
+                            }
+                            onError={({ currentTarget }) => {
+                              currentTarget.onerror = null; // prevents looping
+                              currentTarget.src = NoArt;
+                            }}
+                          />
+                          <CardContent>
+                            <Typography>{Obj.title}</Typography>
+                          </CardContent>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </Box>
+            </AccordionDetails>
+          </Accordion>
         </Box>
         <Box
           hidden={isHidden(2)}
           component="main"
           sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
           label="Playlists"
+          TransitionProps={{
+            unmountOnExit: true,
+            mountOnEnter: true,
+            timeout: 100,
+          }}
         >
           <Toolbar />
           <Typography paragraph>
@@ -453,6 +433,11 @@ function App() {
           component="main"
           sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
           label="Settings"
+          TransitionProps={{
+            unmountOnExit: true,
+            mountOnEnter: true,
+            timeout: 100,
+          }}
         >
           <Toolbar />
 
@@ -521,7 +506,13 @@ function App() {
                         }
                       />
                       <CardContent>
-                        <Accordion variant="dense">
+                        <Accordion
+                          variant="dense"
+                          TransitionProps={{
+                            unmountOnExit: true,
+                            mountOnEnter: true,
+                          }}
+                        >
                           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                             <Typography
                               sx={{ flexGrow: 1 }}
@@ -710,6 +701,37 @@ function App() {
               </Grid>
             </Grid>
           </Grid>
+        </Box>
+        <Box
+          hidden={isHidden(4)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Playlists"
+          TransitionProps={{
+            unmountOnExit: true,
+            mountOnEnter: true,
+            timeout: 100,
+          }}
+        >
+          <Toolbar />
+          <Typography>{activeArtist?.title}</Typography>
+          <List></List>
+        </Box>
+        <Box
+          hidden={isHidden(5)}
+          component="main"
+          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+          label="Playlists"
+          TransitionProps={{
+            unmountOnExit: true,
+            mountOnEnter: true,
+            timeout: 100,
+          }}
+        >
+          <Toolbar />
+          <Typography paragraph>
+            This will be the Album page of my App
+          </Typography>
         </Box>
       </Box>
     </ThemeProvider>

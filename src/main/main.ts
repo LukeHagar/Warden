@@ -11,9 +11,13 @@
 import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
+import Store from 'electron-store';
 import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+const fs = require('fs');
+
+Store.initRenderer();
 
 class AppUpdater {
   constructor() {
