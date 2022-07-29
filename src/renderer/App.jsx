@@ -16,7 +16,6 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
-import useMediaQuery from '@mui/system';
 
 import HomeIcon from '@mui/icons-material/Home';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
@@ -39,6 +38,7 @@ import {
   CardContent,
   CardHeader,
   CardMedia,
+  CircularProgress,
   Grid,
   Icon,
   IconButton,
@@ -56,6 +56,7 @@ import ReactJkMusicPlayer from 'react-jinke-music-player';
 import XMLParser from 'react-xml-parser';
 import { PlexAPIOAuth } from 'plex-api-oauth';
 import qs from 'qs';
+import InfiniteScroll from 'react-infinite-scroller';
 import NoArt from './noart.png';
 
 const drawerWidth = 240;
@@ -106,8 +107,8 @@ function App() {
     });
   }
 
-  console.log('Theme');
-  console.log(activeTheme);
+  // console.log('Theme');
+  // console.log(activeTheme);
 
   const PlexSession = new PlexAPIOAuth();
   PlexSession.LoadPlexSession();
@@ -123,17 +124,28 @@ function App() {
     await PlexSession.GetPlexServers();
     await PlexSession.GetPlexLibraries();
     await PlexSession.SavePlexSession();
-    setPlexServers(await PlexSession.GetPlexServers());
-    setPlexLibraries(await PlexSession.GetPlexLibraries());
-    setAlbums(await PlexSession.GetPlexAlbums());
-    setArtists(await PlexSession.GetPlexArtists());
-    setSongs(await PlexSession.GetPlexSongs());
+    await PlexSession.GetPlexServers();
+    await PlexSession.GetPlexLibraries();
+    setPlexStateTracker(plexStateTracker + 1);
   }
 
   async function PlexLogoutButton() {
     await PlexSession.PlexLogout();
     await PlexSession.SavePlexSession();
     setPlexStateTracker(plexStateTracker + 1);
+  }
+
+  function MediaCard() {}
+
+  const [artistsSet, setArtistSet] = useState([]);
+
+  async function PlexArtists() {
+    const response = await PlexSession.GetPlexArtists([], [], {
+      'X-Plex-Container-Start': 0,
+      'X-Plex-Container-Size': 50,
+    });
+    console.log(response);
+    setArtistSet(response);
   }
 
   function isHidden(id) {
@@ -266,8 +278,14 @@ function App() {
         >
           <Toolbar />
           <Box sx={{}}>
-            <Grid container spacing={2}>
-              {artists.filter(onlyUnique)?.map((Obj, index) => (
+            <InfiniteScroll
+              className="artistScroll"
+              pageStart={0}
+              loadMore={PlexArtists()}
+              hasMore={false}
+              loader={<CircularProgress key={0} className="loader" />}
+            >
+              {artistsSet?.filter(onlyUnique)?.map((Obj, index) => (
                 <Grid item xs={2} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
@@ -307,7 +325,8 @@ function App() {
                   </Card>
                 </Grid>
               ))}
-            </Grid>
+            </InfiniteScroll>
+            <Grid container spacing={2}></Grid>
           </Box>
         </Box>
         <Box
