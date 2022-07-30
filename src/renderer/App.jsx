@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-no-bind */
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable prefer-template */
 import * as React from 'react';
@@ -42,6 +43,7 @@ import {
   Grid,
   Icon,
   IconButton,
+  TextareaAutosize,
   TextField,
 } from '@mui/material';
 import Table from '@mui/material/Table';
@@ -68,21 +70,18 @@ const iconindex = {
   Settings: <SettingsIcon />,
 };
 
-function onlyUnique(value, index, self) {
-  return self.indexOf(value) === index;
-}
-
 function App() {
   const [activePage, setActivePage] = useState(0);
-  const [activeArtist, setActiveArtist] = useState();
-  const [activeAlbum, setActiveAlbum] = useState();
   const [plexStateTracker, setPlexStateTracker] = useState(0);
 
-  const [plexServers, setPlexServers] = useState([]);
-  const [plexLibraries, setPlexLibraries] = useState([]);
-  const [artists, setArtists] = useState([]);
-  const [albums, setAlbums] = useState([]);
-  const [songs, setSongs] = useState([]);
+  const [query, setQuery] = useState('');
+  const [pageNumber, setPageNumber] = useState(0);
+  const [topic, setTopic] = useState();
+
+  function handleSearch(event) {
+    setQuery(event.target.value);
+    setPageNumber(1);
+  }
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
     // console.log('🎉 Dark mode is supported');
@@ -135,18 +134,25 @@ function App() {
     setPlexStateTracker(plexStateTracker + 1);
   }
 
-  function MediaCard() {}
+  const { items, hasMore, loading, error } = PlexSession.GetLibraryPages(
+    topic,
+    query,
+    pageNumber
+  );
 
-  const [artistsSet, setArtistSet] = useState([]);
-
-  async function PlexArtists() {
-    const response = await PlexSession.GetPlexArtists([], [], {
-      'X-Plex-Container-Start': 0,
-      'X-Plex-Container-Size': 50,
-    });
-    console.log(response);
-    setArtistSet(response);
+  function clearQuery() {
+    setQuery('');
   }
+
+  console.log(query);
+  console.log(topic);
+  console.log(hasMore);
+  console.log(loading);
+  console.log(error);
+
+  // useEffect(() => {
+  //   setSongs(PlexSession.GetLibraryPages('songs', query, pageNumber));
+  // }, [query]);
 
   function isHidden(id) {
     if (activePage === id) {
@@ -172,6 +178,15 @@ function App() {
         >
           <Toolbar>
             <Box />
+            <TextField
+              id="outlined-basic"
+              label="Search"
+              variant="outlined"
+              margin="dense"
+              fullWidth
+              value={query}
+              onChange={handleSearch}
+            />
           </Toolbar>
         </AppBar>
         <Drawer
@@ -208,21 +223,39 @@ function App() {
             </ListItem>
             <Divider />
             <ListItem key="ArtistsTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(2)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(2);
+                  setTopic('artists');
+                  clearQuery();
+                }}
+              >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Artists" />
               </ListItemButton>
             </ListItem>
             <Divider />
             <ListItem key="AlbumsTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(3)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(3);
+                  setTopic('albums');
+                  clearQuery();
+                }}
+              >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Albums" />
               </ListItemButton>
             </ListItem>
             <Divider />
             <ListItem key="SongsTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(4)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(4);
+                  setTopic('songs');
+                  clearQuery();
+                }}
+              >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Songs" />
               </ListItemButton>
@@ -255,9 +288,6 @@ function App() {
           }}
         >
           <Toolbar />
-          <Typography paragraph>
-            This will be the Home page of my App
-          </Typography>
         </Box>
         <Box
           hidden={isHidden(1)}
@@ -277,21 +307,14 @@ function App() {
           }}
         >
           <Toolbar />
-          <Box sx={{}}>
-            <InfiniteScroll
-              className="artistScroll"
-              pageStart={0}
-              loadMore={PlexArtists()}
-              hasMore={false}
-              loader={<CircularProgress key={0} className="loader" />}
-            >
-              {artistsSet?.filter(onlyUnique)?.map((Obj, index) => (
+          <Box sx={{}} loading="lazy">
+            <Grid container spacing={2}>
+              {items?.map((Obj, index) => (
                 <Grid item xs={2} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
                       onClick={() => {
-                        setActivePage();
-                        setActiveArtist(Obj);
+                        setActivePage(4);
                       }}
                     >
                       <CardMedia
@@ -320,13 +343,13 @@ function App() {
                       />
                       <CardContent>
                         <Typography noWrap>{Obj.title}</Typography>
+                        <div>{loading && 'Loading....'}</div>
                       </CardContent>
                     </CardActionArea>
                   </Card>
                 </Grid>
               ))}
-            </InfiniteScroll>
-            <Grid container spacing={2}></Grid>
+            </Grid>
           </Box>
         </Box>
         <Box
@@ -341,13 +364,12 @@ function App() {
           <Toolbar />
           <Box sx={{}} loading="lazy">
             <Grid container spacing={2}>
-              {albums.filter(onlyUnique)?.map((Obj, index) => (
+              {items?.map((Obj, index) => (
                 <Grid item xs={2} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
                       onClick={() => {
                         setActivePage(4);
-                        setActiveArtist(Obj);
                       }}
                     >
                       <CardMedia
@@ -394,15 +416,14 @@ function App() {
           }}
         >
           <Toolbar />
-          <Box sx={{}}>
+          <Box sx={{}} loading="lazy">
             <Grid container spacing={2}>
-              {songs.filter(onlyUnique)?.map((Obj, index) => (
-                <Grid item xs={2} key={Obj.guid + '-' + index}>
+              {items?.map((Obj, index) => (
+                <Grid item xs={2} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
                       onClick={() => {
                         setActivePage(4);
-                        setActiveArtist(Obj);
                       }}
                     >
                       <CardMedia

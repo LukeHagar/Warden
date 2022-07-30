@@ -1028,9 +1028,9 @@
   "version" "4.1.0"
 
 "@sinclair/typebox@^0.24.1":
-  "integrity" "sha512-II2SIjvxBVJmrGkkZYza/BqNjwx3PWROIA8CZ0/Hn7LV0Mv0CVpZxoyHGBVsQqfFLMv9DmArIeRHTwo76bE6oA=="
-  "resolved" "https://registry.npmjs.org/@sinclair/typebox/-/typebox-0.24.21.tgz"
-  "version" "0.24.21"
+  "integrity" "sha512-JsBe3cOFpNZ6yjBYnXKhcENWy5qZE3PQZwExQ5ksA/h8qp4bwwxFmy07A6bC2R6qv6+RF3SfrbQTskTwYNTXUQ=="
+  "resolved" "https://registry.npmjs.org/@sinclair/typebox/-/typebox-0.24.22.tgz"
+  "version" "0.24.22"
 
 "@sindresorhus/is@^0.14.0":
   "integrity" "sha512-9NET910DNaIPngYnLLPeg+Ogzqsi9uM4mSboU5y6p8S5DzMTVEsJZrawi+BoDNUVBa2DhJqQYUFvMDfgU062LQ=="
@@ -4001,9 +4001,9 @@
     "type-fest" "^2.12.2"
 
 "electron-to-chromium@^1.4.202":
-  "integrity" "sha512-sSHlbfqn6CgQqD9muogEwWrw1wi2tHEQ+sunW7ex/kJ9ICucE85JW0E9ekbRDDgLP7NlpoNVUl+el0556RhFIg=="
-  "resolved" "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.4.205.tgz"
-  "version" "1.4.205"
+  "integrity" "sha512-h+Fadt1gIaQ06JaIiyqPsBjJ08fV5Q7md+V8bUvQW/9OvXfL2LRICTz2EcnnCP7QzrFTS6/27MRV6Bl9Yn97zA=="
+  "resolved" "https://registry.npmjs.org/electron-to-chromium/-/electron-to-chromium-1.4.206.tgz"
+  "version" "1.4.206"
 
 "electron-updater@^5.0.3":
   "integrity" "sha512-YcKEI9zpU+c0sNXTpjw3UpzP8Pfuuwo70T42oLYm0hHc0dy41ih51oENlhxgooa2+uzzpXhoCOyrpG+w6CB0Pw=="
@@ -7870,13 +7870,15 @@
   "version" "1.1.0"
 
 "plex-api-oauth@^1.0.4":
-  "integrity" "sha512-QQ2OAa8qzUpNHj2F0xO33c8AqOmgdX8uneuvUWsy7/lqbYPf1oYl7YVOQrnJWDUIlNurZX6Egtpxh3aIKniJ4Q=="
-  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.1.9.tgz"
-  "version" "1.1.9"
+  "integrity" "sha512-FSStMHc6K6Fr1Ed4AiCejIHG2uZaN5yeJLDgtlhAhbKNmEIDFN5eYYgkJsdUuQ7LAV+NPejEPcWF6xsdi8y62A=="
+  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.1.46.tgz"
+  "version" "1.1.46"
   dependencies:
     "axios" "^0.27.2"
     "plex-oauth" "^2.0.2"
     "qs" "^6.11.0"
+    "react" "^18.2.0"
+    "react-infinite-scroller" "^1.2.6"
     "ts-mocha" "^10.0.0"
     "typescript" "^4.7.4"
     "uuid" "^8.3.2"
