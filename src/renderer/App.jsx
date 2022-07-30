@@ -56,7 +56,16 @@ import Paper from '@mui/material/Paper';
 
 import ReactJkMusicPlayer from 'react-jinke-music-player';
 import XMLParser from 'react-xml-parser';
-import { PlexAPIOAuth } from 'plex-api-oauth';
+import {
+  CreatePlexClientInformation,
+  PlexLogin,
+  GetLibraryPages,
+  GetPlexUserData,
+  GetPlexServers,
+  GetPlexLibraries,
+  LoadPlexSession,
+  SavePlexSession,
+} from 'plex-api-oauth';
 import qs from 'qs';
 import InfiniteScroll from 'react-infinite-scroller';
 import NoArt from './noart.png';
@@ -73,6 +82,16 @@ const iconindex = {
 function App() {
   const [activePage, setActivePage] = useState(0);
   const [plexStateTracker, setPlexStateTracker] = useState(0);
+
+  const { tempplexClientInformation, tempplexTVAuthToken } = LoadPlexSession();
+
+  const [plexClientInformation, setPlexClientInformation] = useState(
+    tempplexClientInformation
+  );
+  const [plexTVAuthToken, setPlexTVAuthToken] = useState(tempplexTVAuthToken);
+  const [plexTVUserData, setPlexTVUserData] = useState();
+  const [plexServers, setPlexServers] = useState();
+  const [plexLibraries, setPlexLibraries] = useState();
 
   const [query, setQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
@@ -109,45 +128,52 @@ function App() {
   // console.log('Theme');
   // console.log(activeTheme);
 
-  const PlexSession = new PlexAPIOAuth();
-  PlexSession.LoadPlexSession();
-
-  if (PlexSession.clientId === '' || PlexSession.clientId == null) {
-    PlexSession.GenerateClientId();
-    PlexSession.SavePlexSession();
-  }
-
   async function PlexLoginButton() {
-    await PlexSession.PlexLogin();
-    await PlexSession.GetPlexUserData();
-    await PlexSession.GetPlexServers();
-    await PlexSession.GetPlexLibraries();
-    await PlexSession.SavePlexSession();
-    await PlexSession.GetPlexServers();
-    await PlexSession.GetPlexLibraries();
+    setPlexClientInformation(CreatePlexClientInformation());
+    setPlexTVAuthToken(await PlexLogin(plexClientInformation));
+    SavePlexSession({
+      plexClientInformation,
+      plexTVAuthToken,
+    });
+    setPlexTVUserData(
+      await GetPlexUserData(plexClientInformation, plexTVAuthToken)
+    );
+    setPlexServers(
+      await GetPlexServers(plexClientInformation, plexTVAuthToken)
+    );
+    setPlexLibraries(await GetPlexLibraries(plexServers));
     setPlexStateTracker(plexStateTracker + 1);
   }
 
   async function PlexLogoutButton() {
-    await PlexSession.PlexLogout();
-    await PlexSession.SavePlexSession();
     setPlexStateTracker(plexStateTracker + 1);
   }
 
-  const { items, hasMore, loading, error } = PlexSession.GetLibraryPages(
+  const { items, hasMore, loading, error } = GetLibraryPages(
+    plexServers,
+    plexLibraries,
     topic,
     query,
     pageNumber
   );
 
-  function clearQuery() {
-    setQuery('');
-  }
-
+  console.log('plexTVAuthToken');
+  console.log(plexTVAuthToken);
+  console.log('plexClientInformation');
+  console.log(plexClientInformation);
+  console.log('plexTVUserData');
+  console.log(plexTVUserData);
+  console.log('plexServers');
+  console.log(plexServers);
+  console.log('query');
   console.log(query);
+  console.log('topic');
   console.log(topic);
+  console.log('hasMore');
   console.log(hasMore);
+  console.log('loading');
   console.log(loading);
+  console.log('error');
   console.log(error);
 
   // useEffect(() => {
@@ -227,7 +253,6 @@ function App() {
                 onClick={() => {
                   setActivePage(2);
                   setTopic('artists');
-                  clearQuery();
                 }}
               >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
@@ -240,7 +265,6 @@ function App() {
                 onClick={() => {
                   setActivePage(3);
                   setTopic('albums');
-                  clearQuery();
                 }}
               >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
@@ -253,7 +277,6 @@ function App() {
                 onClick={() => {
                   setActivePage(4);
                   setTopic('songs');
-                  clearQuery();
                 }}
               >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
@@ -502,7 +525,7 @@ function App() {
             </Grid>
             <Grid item xs={12}>
               <Typography sx={{ flexGrow: 1 }} component="div">
-                UUID:{PlexSession?.clientId}
+                UUID:{plexClientInformation?.clientIdentifier}
               </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -521,8 +544,8 @@ function App() {
                       <CardHeader
                         avatar={
                           <Avatar
-                            alt={PlexSession?.plexTVUserData?.friendlyName}
-                            src={PlexSession?.plexTVUserData?.thumb}
+                            alt={plexTVUserData?.friendlyName}
+                            src={plexTVUserData?.thumb}
                             sx={{ width: 56, height: 56 }}
                           />
                         }
@@ -548,8 +571,8 @@ function App() {
                         }
                         title="Plex Account"
                         subheader={`Username: ${
-                          PlexSession?.plexTVUserData?.username
-                            ? PlexSession?.plexTVUserData?.username
+                          plexTVUserData?.username
+                            ? plexTVUserData?.username
                             : null
                         }`}
                       />
@@ -576,8 +599,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Username:{' '}
-                                  {PlexSession?.plexTVUserData?.username}
+                                  Username: {plexTVUserData?.username}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -585,7 +607,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Email: {PlexSession?.plexTVUserData?.email}
+                                  Email: {plexTVUserData?.email}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -594,10 +616,7 @@ function App() {
                                   component="div"
                                 >
                                   Account Status:{' '}
-                                  {
-                                    PlexSession?.plexTVUserData
-                                      ?.subscriptionDescription
-                                  }
+                                  {plexTVUserData?.subscriptionDescription}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -605,10 +624,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Plex Auth Token:{' '}
-                                  {PlexSession?.plexTVAuthToken
-                                    ? PlexSession?.plexTVAuthToken
-                                    : null}
+                                  Plex Auth Token: {plexTVAuthToken || null}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -649,7 +665,7 @@ function App() {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {PlexSession?.plexServers?.map((row) => (
+                                    {plexServers?.map((row) => (
                                       <TableRow
                                         key={row.name}
                                         sx={{
