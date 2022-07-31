@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable react/jsx-no-bind */
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable prefer-template */
@@ -83,10 +84,29 @@ function App() {
   const [activePage, setActivePage] = useState(0);
   const [plexStateTracker, setPlexStateTracker] = useState(0);
 
-  const [plexSession, setPlexSession] = useState(LoadPlexSession());
-  const [plexSessionData, setPlexSessionData] = useState();
+  let loadedSession = LoadPlexSession();
+  console.log(loadedSession);
+  if (
+    loadedSession.plexClientInformation === null ||
+    loadedSession.plexClientInformation === undefined
+  ) {
+    loadedSession.plexClientInformation = CreatePlexClientInformation();
+  }
 
-  const [plexLibraryData, setPlexLibraryData] = useState();
+  console.log(loadedSession);
+
+  const [plexClientInformation, setPlexClientInformation] = useState(
+    loadedSession.plexClientInformation
+  );
+  const [plexTVAuthToken, setPlexTVAuthToken] = useState(
+    loadedSession.plexTVAuthToken
+  );
+  const [plexServers, setPlexServers] = useState();
+  const [plexTVUserData, setPlexTVUserData] = useState();
+  const [plexLibraries, setPlexLibraries] = useState();
+
+  const [libraryItems, setLibraryItems] = useState([]);
+  const [libraryHasMore, setLibraryHasMore] = useState(false);
   const [searchData, setSearchData] = useState();
 
   const [query, setQuery] = useState('');
@@ -95,7 +115,6 @@ function App() {
 
   function handleSearch(event) {
     setQuery(event.target.value);
-    setPageNumber(1);
   }
 
   if (window.matchMedia('(prefers-color-scheme)').media !== 'not all') {
@@ -125,45 +144,100 @@ function App() {
   // console.log(activeTheme);
 
   async function PlexLoginButton() {
-    setPlexSession(await PlexLogin());
-    SavePlexSession(plexSession);
-    const plexTVUserData = await GetPlexUserData(plexSession);
-    const plexServers = await GetPlexServers(plexSession);
-    const plexLibraries = await GetPlexLibraries(plexServers);
-    setPlexSessionData({ plexTVUserData, plexServers, plexLibraries });
+    const tempPlexTVAuthToken = await PlexLogin(plexClientInformation);
+    const tempPlexTVUserData = await GetPlexUserData(
+      plexClientInformation,
+      tempPlexTVAuthToken
+    );
+    const tempPlexServers = await GetPlexServers(
+      plexClientInformation,
+      tempPlexTVAuthToken
+    );
+    const tempPlexLibraries = await GetPlexLibraries(tempPlexServers);
+    setPlexTVAuthToken(tempPlexTVAuthToken);
+    setPlexServers(tempPlexServers);
+    setPlexTVUserData(tempPlexTVUserData);
+    setPlexLibraries(tempPlexLibraries);
+    SavePlexSession(plexClientInformation, tempPlexTVAuthToken);
   }
 
   async function PlexLogoutButton() {
     setPlexStateTracker(plexStateTracker + 1);
   }
 
-  useEffect(() => {
-    const { searchItems, searchHasMore, searchLoading, searchError } =
-      GetLibraryPages(plexSessionData, topic, query, pageNumber);
-    setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
-  }, [pageNumber, topic, query, plexSessionData]);
+  async function Refresh() {
+    const tempPlexTVUserData = await GetPlexUserData(
+      plexClientInformation,
+      plexTVAuthToken
+    );
+    const tempPlexServers = await GetPlexServers(
+      plexClientInformation,
+      plexTVAuthToken
+    );
+    const tempPlexLibraries = await GetPlexLibraries(tempPlexServers);
+    setPlexServers(tempPlexServers);
+    setPlexTVUserData(tempPlexTVUserData);
+    setPlexLibraries(tempPlexLibraries);
+  }
+
+  // useEffect(() => {
+  //   const { searchItems, searchHasMore, searchLoading, searchError } =
+  //     GetLibraryPages(
+  //       {
+  //         servers: plexSessionData.plexServers,
+  //         libraries: plexSessionData.plexLibraries,
+  //       },
+  //       topic,
+  //       query,
+  //       pageNumber
+  //     );
+  //   setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
+  // }, [pageNumber, topic, query, plexSessionData]);
+
+  async function UpdateLibrary() {
+    console.log("I'M HERE");
+    let returnObject = await GetLibraryPages(
+      plexServers,
+      plexLibraries,
+      topic,
+      pageNumber,
+      50
+    );
+    console.log(returnObject);
+    if (libraryItems.length > 0) {
+      returnObject.items = [...returnObject.items, ...libraryItems];
+    }
+
+    setLibraryItems(returnObject.items);
+    setLibraryHasMore(returnObject.hasMore);
+  }
 
   useEffect(() => {
-    const { libraryItems, libraryHasMore, libraryLoading, libraryError } =
-      GetLibraryPages(plexSessionData, topic, '', pageNumber);
-    setPlexLibraryData({
-      libraryItems,
-      libraryHasMore,
-      libraryLoading,
-      libraryError,
-    });
-  }, [pageNumber, plexSessionData, topic]);
+    setLibraryItems([]);
+    setLibraryHasMore(false);
+  }, [topic]);
+
+  useEffect(() => {
+    UpdateLibrary();
+  }, [pageNumber, plexServers, plexLibraries, topic]);
+
+  useEffect(() => {
+    Refresh();
+  }, []);
 
   console.log('Plex Session:');
-  console.log(plexSession);
+  console.log(plexTVAuthToken);
+  console.log(plexClientInformation);
   console.log('Plex Session Data:');
-  console.log(plexSessionData);
-  console.log('query');
-  console.log(query);
+  console.log(plexTVUserData);
+  console.log(plexServers);
+  console.log(plexLibraries);
   console.log('topic');
   console.log(topic);
+  console.log(pageNumber);
   console.log('Plex Library Data:');
-  console.log(plexLibraryData);
+  console.log(libraryItems);
+  console.log(libraryHasMore);
   console.log('Search Data:');
   console.log(searchData);
 
@@ -306,6 +380,51 @@ function App() {
           label="Library"
         >
           <Toolbar />
+          <Box sx={{}} loading="lazy">
+            <Grid container spacing={2}>
+              {plexLibraries
+                ?.filter((Obj) => Obj.type === 'artist')
+                ?.map((Obj, index) => (
+                  <Grid item xs={2} key={Obj.guid + index}>
+                    <Card>
+                      <CardActionArea
+                        onClick={() => {
+                          setActivePage(4);
+                        }}
+                      >
+                        <CardMedia
+                          loading="lazy"
+                          component="img"
+                          height="240"
+                          image={
+                            Obj.server.preferredConnection.uri +
+                              '/photo/:/transcode?' +
+                              qs.stringify({
+                                width: 240,
+                                height: 240,
+                                minSize: 1,
+                                upscale: 1,
+                                url:
+                                  Obj.thumb +
+                                  '?X-Plex-Token=' +
+                                  Obj.server.accessToken,
+                                'X-Plex-Token': Obj.server.accessToken,
+                              }) || NoArt
+                          }
+                          onError={({ currentTarget }) => {
+                            currentTarget.onerror = null; // prevents looping
+                            currentTarget.src = NoArt;
+                          }}
+                        />
+                        <CardContent>
+                          <Typography noWrap>{Obj.title}</Typography>
+                        </CardContent>
+                      </CardActionArea>
+                    </Card>
+                  </Grid>
+                ))}
+            </Grid>
+          </Box>
         </Box>
         <Box
           hidden={isHidden(2)}
@@ -319,7 +438,7 @@ function App() {
           <Toolbar />
           <Box sx={{}} loading="lazy">
             <Grid container spacing={2}>
-              {plexLibraryData?.libraryItems?.map((Obj, index) => (
+              {libraryItems?.map((Obj, index) => (
                 <Grid item xs={2} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
@@ -353,9 +472,6 @@ function App() {
                       />
                       <CardContent>
                         <Typography noWrap>{Obj.title}</Typography>
-                        <div>
-                          {plexLibraryData?.libraryLoading && 'Loading....'}
-                        </div>
                       </CardContent>
                     </CardActionArea>
                   </Card>
@@ -406,7 +522,7 @@ function App() {
             </Grid>
             <Grid item xs={12}>
               <Typography sx={{ flexGrow: 1 }} component="div">
-                UUID:{plexSession?.plexClientInformation?.clientIdentifier}
+                UUID:{plexClientInformation?.clientIdentifier}
               </Typography>
             </Grid>
             <Grid item xs={12}>
@@ -425,8 +541,8 @@ function App() {
                       <CardHeader
                         avatar={
                           <Avatar
-                            alt={plexSessionData?.plexTVUserData?.friendlyName}
-                            src={plexSessionData?.plexTVUserData?.thumb}
+                            alt={plexTVUserData?.friendlyName}
+                            src={plexTVUserData?.thumb}
                             sx={{ width: 56, height: 56 }}
                           />
                         }
@@ -452,8 +568,8 @@ function App() {
                         }
                         title="Plex Account"
                         subheader={`Username: ${
-                          plexSessionData?.plexTVUserData?.username
-                            ? plexSessionData?.plexTVUserData?.username
+                          plexTVUserData?.username
+                            ? plexTVUserData?.username
                             : null
                         }`}
                       />
@@ -480,8 +596,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Username:{' '}
-                                  {plexSessionData?.plexTVUserData?.username}
+                                  Username: {plexTVUserData?.username}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -489,8 +604,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Email:{' '}
-                                  {plexSessionData?.plexTVUserData?.email}
+                                  Email: {plexTVUserData?.email}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -499,10 +613,7 @@ function App() {
                                   component="div"
                                 >
                                   Account Status:{' '}
-                                  {
-                                    plexSessionData?.plexTVUserData
-                                      ?.subscriptionDescription
-                                  }
+                                  {plexTVUserData?.subscriptionDescription}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -510,8 +621,7 @@ function App() {
                                   sx={{ flexGrow: 1 }}
                                   component="div"
                                 >
-                                  Plex Auth Token:{' '}
-                                  {plexSession?.plexTVAuthToken || null}
+                                  Plex Auth Token: {plexTVAuthToken || null}
                                 </Typography>
                               </Grid>
                               <Grid item xs={12}>
@@ -552,37 +662,34 @@ function App() {
                                     </TableRow>
                                   </TableHead>
                                   <TableBody>
-                                    {plexSessionData?.plexServers?.map(
-                                      (row) => (
-                                        <TableRow
-                                          key={row.name}
-                                          sx={{
-                                            '&:last-child td, &:last-child th':
-                                              {
-                                                border: 0,
-                                              },
-                                          }}
-                                        >
-                                          <TableCell component="th" scope="row">
-                                            {row?.name}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {row?.publicAddress}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {row?.platform}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {row?.owned ? 'Yes' : 'No'}
-                                          </TableCell>
-                                          <TableCell align="right">
-                                            {row?.publicAddressMatches
-                                              ? 'Local'
-                                              : 'Remote'}
-                                          </TableCell>
-                                        </TableRow>
-                                      )
-                                    )}
+                                    {plexServers?.map((row) => (
+                                      <TableRow
+                                        key={row.name}
+                                        sx={{
+                                          '&:last-child td, &:last-child th': {
+                                            border: 0,
+                                          },
+                                        }}
+                                      >
+                                        <TableCell component="th" scope="row">
+                                          {row?.name}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.publicAddress}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.platform}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.owned ? 'Yes' : 'No'}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                          {row?.publicAddressMatches
+                                            ? 'Local'
+                                            : 'Remote'}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
                                   </TableBody>
                                 </Table>
                               </TableContainer>
