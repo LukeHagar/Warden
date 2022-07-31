@@ -296,14 +296,22 @@ function App() {
           <Divider />
           <List>
             <ListItem key="HomeTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(0)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(0);
+                }}
+              >
                 <ListItemIcon>{iconindex.Home}</ListItemIcon>
                 <ListItemText primary="Home" />
               </ListItemButton>
             </ListItem>
             <Divider />
             <ListItem key="LibrariesTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(1)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(1);
+                }}
+              >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
                 <ListItemText primary="Libraries" />
               </ListItemButton>
@@ -313,6 +321,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(2);
+                  topic !== 'artists' && setLibraryItems([]);
                   setTopic('artists');
                 }}
               >
@@ -325,6 +334,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(2);
+                  topic !== 'albums' && setLibraryItems([]);
                   setTopic('albums');
                 }}
               >
@@ -337,6 +347,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(2);
+                  topic !== 'songs' && setLibraryItems([]);
                   setTopic('songs');
                 }}
               >
@@ -346,14 +357,22 @@ function App() {
             </ListItem>
             <Divider />
             <ListItem key="PlaylistsTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(5)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(5);
+                }}
+              >
                 <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
                 <ListItemText primary="Playlists" />
               </ListItemButton>
             </ListItem>
             <Divider />
             <ListItem key="SettingsTab" disablePadding>
-              <ListItemButton onClick={() => setActivePage(6)}>
+              <ListItemButton
+                onClick={() => {
+                  setActivePage(6);
+                }}
+              >
                 <ListItemIcon>{iconindex.Settings}</ListItemIcon>
                 <ListItemText primary="Settings" />
               </ListItemButton>
@@ -405,7 +424,7 @@ function App() {
                                 minSize: 1,
                                 upscale: 1,
                                 url:
-                                  Obj.thumb +
+                                  Obj.art +
                                   '?X-Plex-Token=' +
                                   Obj.server.accessToken,
                                 'X-Plex-Token': Obj.server.accessToken,
