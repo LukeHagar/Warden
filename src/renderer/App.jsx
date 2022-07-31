@@ -404,7 +404,7 @@ function App() {
               {plexLibraries
                 ?.filter((Obj) => Obj.type === 'artist')
                 ?.map((Obj, index) => (
-                  <Grid item xs={2} key={Obj.guid + index}>
+                  <Grid item xs={4} key={Obj.guid + index}>
                     <Card>
                       <CardActionArea
                         onClick={() => {
@@ -458,7 +458,7 @@ function App() {
           <Box sx={{}} loading="lazy">
             <Grid container spacing={2}>
               {libraryItems?.map((Obj, index) => (
-                <Grid item xs={2} key={Obj.guid + index}>
+                <Grid item xs={3} key={Obj.guid + index}>
                   <Card>
                     <CardActionArea
                       onClick={() => {
