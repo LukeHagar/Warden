@@ -635,24 +635,30 @@ function App() {
                           />
                         }
                         action={
-                          <Grid container spacing={2}>
-                            <Grid item xs={5}>
-                              <Button
-                                onClick={() => PlexLoginButton()}
-                                variant="outlined"
-                              >
-                                Login
-                              </Button>
-                            </Grid>
-                            <Grid item xs={5}>
-                              <Button
-                                onClick={() => PlexLogoutButton()}
-                                variant="outlined"
-                              >
-                                Logout
-                              </Button>
-                            </Grid>
-                          </Grid>
+                          <div>
+                            <Button
+                              onClick={() => Refresh()}
+                              variant="outlined"
+                              sx={{ margin: 1 }}
+                            >
+                              Refresh
+                            </Button>
+                            <Button
+                              onClick={() => PlexLoginButton()}
+                              variant="outlined"
+                              sx={{ margin: 1 }}
+                            >
+                              Login
+                            </Button>
+
+                            <Button
+                              onClick={() => PlexLogoutButton()}
+                              variant="outlined"
+                              sx={{ margin: 1 }}
+                            >
+                              Logout
+                            </Button>
+                          </div>
                         }
                         title="Plex Account"
                         subheader={`Username: ${
