@@ -22,6 +22,8 @@ import ListItemText from '@mui/material/ListItemText';
 import HomeIcon from '@mui/icons-material/Home';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
+import AlbumIcon from '@mui/icons-material/Album';
+import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
@@ -49,6 +51,12 @@ import {
   Stack,
   ImageList,
   ImageListItem,
+  Skeleton,
+  Snackbar,
+  Alert,
+  Grow,
+  Slide,
+  SnackbarContent,
 } from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -77,6 +85,8 @@ const drawerWidth = 240;
 const iconindex = {
   Home: <HomeIcon />,
   Library: <LibraryMusicIcon />,
+  Album: <AlbumIcon />,
+  Song: <MusicNoteIcon />,
   Playlists: <FeaturedPlayListIcon />,
   Settings: <SettingsIcon />,
 };
@@ -115,6 +125,7 @@ function App() {
   const [query, setQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(true);
   const [topic, setTopic] = useState();
 
   function handleSearch(event) {
@@ -153,6 +164,10 @@ function App() {
 
   console.log('Theme');
   console.log(activeTheme);
+
+  function SlideTransition(props) {
+    return <Slide {...props} direction="left" />;
+  }
 
   async function PlexLoginButton() {
     const tempPlexTVAuthToken = await PlexLogin(plexClientInformation);
@@ -195,6 +210,7 @@ function App() {
     setPlexServers(tempPlexServers);
     setPlexTVUserData(tempPlexTVUserData);
     setPlexLibraries(tempPlexLibraries);
+    setIsRefreshing(false);
   }
 
   // useEffect(() => {
@@ -211,6 +227,21 @@ function App() {
   //   setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
   // }, [pageNumber, topic, query, plexSessionData]);
 
+  function ShowArtist(Obj) {
+    setActiveArtist(Obj);
+    setActivePage(7);
+  }
+
+  function ShowAlbum(Obj) {
+    setActiveAlbum(Obj);
+    setActivePage(8);
+  }
+
+  function ShowPlaylist(Obj) {
+    setActivePlaylist(Obj);
+    setActivePage(9);
+  }
+
   async function UpdateLibrary() {
     setIsLoading(true);
     let returnObject = await GetLibraryPages(
@@ -218,7 +249,7 @@ function App() {
       plexLibraries,
       topic,
       pageNumber,
-      50
+      100
     );
     console.log(returnObject);
     returnObject.items = [...new Set([...libraryItems, ...returnObject.items])];
@@ -254,6 +285,7 @@ function App() {
   }, [pageNumber, plexServers, plexLibraries, topic]);
 
   useEffect(() => {
+    setIsRefreshing(true);
     Refresh();
   }, []);
 
@@ -332,6 +364,7 @@ function App() {
             <List>
               <ListItem key="HomeTab" disablePadding>
                 <ListItemButton
+                  selected={activePage === 0}
                   onClick={() => {
                     setActivePage(0);
                     setPageNumber(0);
@@ -344,6 +377,7 @@ function App() {
               <Divider />
               <ListItem key="LibrariesTab" disablePadding>
                 <ListItemButton
+                  selected={activePage === 1}
                   onClick={() => {
                     setActivePage(1);
                     setPageNumber(0);
@@ -356,6 +390,7 @@ function App() {
               <Divider />
               <ListItem key="ArtistsTab" disablePadding>
                 <ListItemButton
+                  selected={topic === 'artists' && activePage === 2}
                   onClick={() => {
                     setActivePage(2);
                     topic !== 'artists' && setLibraryItems([]);
@@ -370,6 +405,7 @@ function App() {
               <Divider />
               <ListItem key="AlbumsTab" disablePadding>
                 <ListItemButton
+                  selected={topic === 'albums' && activePage === 2}
                   onClick={() => {
                     setActivePage(2);
                     topic !== 'albums' && setLibraryItems([]);
@@ -377,13 +413,14 @@ function App() {
                     setTopic('albums');
                   }}
                 >
-                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemIcon>{iconindex.Album}</ListItemIcon>
                   <ListItemText primary="Albums" />
                 </ListItemButton>
               </ListItem>
               <Divider />
               <ListItem key="SongsTab" disablePadding>
                 <ListItemButton
+                  selected={topic === 'songs' && activePage === 2}
                   onClick={() => {
                     setActivePage(2);
                     topic !== 'songs' && setLibraryItems([]);
@@ -391,13 +428,14 @@ function App() {
                     setTopic('songs');
                   }}
                 >
-                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemIcon>{iconindex.Song}</ListItemIcon>
                   <ListItemText primary="Songs" />
                 </ListItemButton>
               </ListItem>
               <Divider />
               <ListItem key="PlaylistsTab" disablePadding>
                 <ListItemButton
+                  selected={activePage === 5}
                   onClick={() => {
                     setActivePage(5);
                     setPageNumber(0);
@@ -410,6 +448,7 @@ function App() {
               <Divider />
               <ListItem key="SettingsTab" disablePadding>
                 <ListItemButton
+                  selected={activePage === 6}
                   onClick={() => {
                     setActivePage(6);
                     setPageNumber(0);
@@ -425,7 +464,7 @@ function App() {
             hidden={isHidden(0)}
             component="main"
             sx={{
-              overflow: 'hidden',
+              overflow: 'auto',
               flexGrow: 1,
               maxWidth: self.innerWidth - drawerWidth,
               bgcolor: 'background.default',
@@ -444,9 +483,10 @@ function App() {
                   <div>
                     {Obj.title}
                     <ImageList
+                      gap={15}
                       direction="row"
                       sx={{
-                        overflow: 'scroller',
+                        'overflow-x': 'scroll',
                         flexGrow: 1,
                         margin: 4,
                         gridAutoFlow: 'column',
@@ -463,6 +503,7 @@ function App() {
                                 component="img"
                                 height="240"
                                 width="240"
+                                loading="lazy"
                                 image={listItem.thumb || NoArt}
                                 onError={({ currentTarget }) => {
                                   currentTarget.onerror = null; // prevents looping
@@ -470,7 +511,13 @@ function App() {
                                 }}
                               />
                               <CardContent>
-                                <Typography noWrap>{listItem.title}</Typography>
+                                <Typography
+                                  variant="h6"
+                                  justifyContent="center"
+                                  noWrap
+                                >
+                                  {listItem.title}
+                                </Typography>
                               </CardContent>
                             </Card>
                           </ImageListItem>
@@ -590,6 +637,19 @@ function App() {
                     </Grid>
                   );
                 })}
+                {isLoading &&
+                  [0, 1, 2, 3].map((Obj, index) => {
+                    return (
+                      <Grid item xs="auto" key={`Skeleton${index}`}>
+                        <Skeleton
+                          animation="wave"
+                          variant="rectangular"
+                          width={240}
+                          height={240}
+                        />
+                      </Grid>
+                    );
+                  })}
               </Grid>
             </Box>
           </Box>
@@ -662,7 +722,10 @@ function App() {
                           action={
                             <div>
                               <Button
-                                onClick={() => Refresh()}
+                                onClick={() => {
+                                  setIsRefreshing(true);
+                                  Refresh();
+                                }}
                                 variant="outlined"
                                 sx={{ margin: 1 }}
                               >
@@ -827,6 +890,14 @@ function App() {
             </Grid>
           </Box>
         </Box>
+        <Snackbar
+          TransitionComponent={SlideTransition}
+          open={isRefreshing}
+          autoHideDuration={10000}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        >
+          <Alert severity="info">Refreshing Data</Alert>
+        </Snackbar>
       </CssBaseline>
     </ThemeProvider>
   );
