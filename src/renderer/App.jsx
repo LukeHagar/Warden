@@ -23,7 +23,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import LibraryMusicIcon from '@mui/icons-material/LibraryMusic';
 import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import SettingsIcon from '@mui/icons-material/Settings';
-import KeyIcon from '@mui/icons-material/Key';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
@@ -47,6 +46,9 @@ import {
   StepButton,
   TextareaAutosize,
   TextField,
+  Stack,
+  ImageList,
+  ImageListItem,
 } from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -57,7 +59,6 @@ import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
 import { Howl, Howler } from 'howler';
-import XMLParser from 'react-xml-parser';
 import {
   CreatePlexClientInformation,
   PlexLogin,
@@ -67,9 +68,8 @@ import {
   GetPlexLibraries,
   LoadPlexSession,
   SavePlexSession,
+  GetMusicHub,
 } from 'plex-api-oauth';
-import qs from 'qs';
-import InfiniteScroll from 'react-infinite-scroller';
 import NoArt from './noart.png';
 
 const drawerWidth = 240;
@@ -106,6 +106,8 @@ function App() {
   const [plexTVUserData, setPlexTVUserData] = useState();
   const [plexLibraries, setPlexLibraries] = useState();
 
+  const [musicHubs, setMusicHubs] = useState([]);
+
   const [libraryItems, setLibraryItems] = useState([]);
   const [libraryHasMore, setLibraryHasMore] = useState(false);
   const [searchData, setSearchData] = useState();
@@ -123,27 +125,34 @@ function App() {
     // console.log('🎉 Dark mode is supported');
   }
 
-  const MediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-  let activeTheme;
-
-  if (MediaQuery.matches) {
-    // console.log('🎉 Dark mode is preferred');
-    activeTheme = createTheme({
-      palette: {
-        mode: 'dark',
+  const themeBaseline = {
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: ``,
       },
-    });
-  } else {
-    // console.log('🎉 Light mode is preferred');
-    activeTheme = createTheme({
-      palette: {
-        mode: 'light',
-      },
-    });
-  }
+    },
+  };
 
-  // console.log('Theme');
-  // console.log(activeTheme);
+  // console.log('🎉 Dark mode is preferred');
+  const darkTheme = createTheme({
+    ...themeBaseline,
+    palette: {
+      mode: 'dark',
+    },
+  });
+
+  // console.log('🎉 Light mode is preferred');
+  const lightTheme = createTheme({
+    ...themeBaseline,
+    palette: {
+      mode: 'light',
+    },
+  });
+
+  const [activeTheme, setActiveTheme] = useState(darkTheme);
+
+  console.log('Theme');
+  console.log(activeTheme);
 
   async function PlexLoginButton() {
     const tempPlexTVAuthToken = await PlexLogin(plexClientInformation);
@@ -177,6 +186,12 @@ function App() {
       plexTVAuthToken
     );
     const tempPlexLibraries = await GetPlexLibraries(tempPlexServers);
+    const tempMusicHubs = await GetMusicHub(
+      plexClientInformation,
+      tempPlexServers,
+      tempPlexLibraries
+    );
+    setMusicHubs(tempMusicHubs);
     setPlexServers(tempPlexServers);
     setPlexTVUserData(tempPlexTVUserData);
     setPlexLibraries(tempPlexLibraries);
@@ -198,7 +213,6 @@ function App() {
 
   async function UpdateLibrary() {
     setIsLoading(true);
-    console.log("I'M HERE");
     let returnObject = await GetLibraryPages(
       plexServers,
       plexLibraries,
@@ -250,12 +264,15 @@ function App() {
   console.log(plexTVUserData);
   console.log(plexServers);
   console.log(plexLibraries);
-  console.log('topic');
+  console.log('Topic:');
   console.log(topic);
+  console.log('Page Number:');
   console.log(pageNumber);
   console.log('Plex Library Data:');
   console.log(libraryItems);
   console.log(libraryHasMore);
+  console.log('Hubs:');
+  console.log(musicHubs);
   console.log('Search Data:');
   console.log(searchData);
 
@@ -272,222 +289,283 @@ function App() {
 
   return (
     <ThemeProvider theme={activeTheme}>
-      <Box sx={{ display: 'flex', bgcolor: 'primary.main' }}>
-        <CssBaseline />
-        <AppBar
-          position="fixed"
-          sx={{
-            width: `calc(100% - ${drawerWidth}px)`,
-            ml: `${drawerWidth}px`,
-          }}
-        >
-          <Toolbar>
-            <Box />
-            <TextField
-              id="outlined-basic"
-              label="Search"
-              variant="outlined"
-              margin="dense"
-              fullWidth
-              value={query}
-              onChange={handleSearch}
-            />
-          </Toolbar>
-        </AppBar>
-        <Drawer
-          sx={{
-            width: drawerWidth,
-            flexShrink: 0,
-            '& .MuiDrawer-paper': {
+      <CssBaseline enableColorScheme>
+        <Box sx={{ display: 'flex', bgcolor: 'primary.main' }}>
+          <AppBar
+            position="fixed"
+            sx={{
+              width: `calc(100% - ${drawerWidth}px)`,
+              ml: `${drawerWidth}px`,
+            }}
+          >
+            <Toolbar>
+              <Box />
+              <TextField
+                id="outlined-basic"
+                label="Search"
+                variant="standard"
+                margin="dense"
+                fullWidth
+                value={query}
+                onChange={handleSearch}
+              />
+            </Toolbar>
+          </AppBar>
+          <Drawer
+            sx={{
               width: drawerWidth,
-              boxSizing: 'border-box',
-            },
-          }}
-          variant="permanent"
-          anchor="left"
-        >
-          <Toolbar>
-            <Typography variant="h4" sx={{ flexGrow: 1 }} component="div">
-              Warden
-            </Typography>
-          </Toolbar>
-          <Divider />
-          <List>
-            <ListItem key="HomeTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(0);
-                  setPageNumber(0);
-                }}
-              >
-                <ListItemIcon>{iconindex.Home}</ListItemIcon>
-                <ListItemText primary="Home" />
-              </ListItemButton>
-            </ListItem>
+              flexShrink: 0,
+              '& .MuiDrawer-paper': {
+                width: drawerWidth,
+                boxSizing: 'border-box',
+              },
+            }}
+            variant="permanent"
+            anchor="left"
+          >
+            <Toolbar>
+              <Typography variant="h4" sx={{ flexGrow: 1 }} component="div">
+                Warden
+              </Typography>
+            </Toolbar>
             <Divider />
-            <ListItem key="LibrariesTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(1);
-                  setPageNumber(0);
-                }}
-              >
-                <ListItemIcon>{iconindex.Library}</ListItemIcon>
-                <ListItemText primary="Libraries" />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-            <ListItem key="ArtistsTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(2);
-                  topic !== 'artists' && setLibraryItems([]);
-                  setPageNumber(0);
-                  setTopic('artists');
-                }}
-              >
-                <ListItemIcon>{iconindex.Library}</ListItemIcon>
-                <ListItemText primary="Artists" />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-            <ListItem key="AlbumsTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(2);
-                  topic !== 'albums' && setLibraryItems([]);
-                  setPageNumber(0);
-                  setTopic('albums');
-                }}
-              >
-                <ListItemIcon>{iconindex.Library}</ListItemIcon>
-                <ListItemText primary="Albums" />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-            <ListItem key="SongsTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(2);
-                  topic !== 'songs' && setLibraryItems([]);
-                  setPageNumber(0);
-                  setTopic('songs');
-                }}
-              >
-                <ListItemIcon>{iconindex.Library}</ListItemIcon>
-                <ListItemText primary="Songs" />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-            <ListItem key="PlaylistsTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(5);
-                  setPageNumber(0);
-                }}
-              >
-                <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
-                <ListItemText primary="Playlists" />
-              </ListItemButton>
-            </ListItem>
-            <Divider />
-            <ListItem key="SettingsTab" disablePadding>
-              <ListItemButton
-                onClick={() => {
-                  setActivePage(6);
-                  setPageNumber(0);
-                }}
-              >
-                <ListItemIcon>{iconindex.Settings}</ListItemIcon>
-                <ListItemText primary="Settings" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Drawer>
-        <Box
-          hidden={isHidden(0)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Home"
-          TransitionProps={{
-            unmountOnExit: true,
-
-            timeout: 200,
-          }}
-        >
-          <Toolbar />
-        </Box>
-        <Box
-          hidden={isHidden(1)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Library"
-        >
-          <Toolbar />
-          <Box sx={{}} loading="lazy">
-            <Grid container spacing={2}>
-              {plexLibraries
-                ?.filter((Obj) => Obj.type === 'artist')
-                ?.map((Obj, index) => (
-                  <Grid item xs={4} key={Obj.guid + index}>
-                    <Card>
-                      <CardActionArea
-                        onClick={() => {
-                          setActivePage(4);
-                          setPageNumber(0);
-                        }}
-                      >
-                        <CardMedia
-                          loading="lazy"
-                          component="img"
-                          height="240"
-                          image={
-                            Obj.server.preferredConnection.uri +
-                              '/photo/:/transcode?' +
-                              qs.stringify({
-                                width: 240,
-                                height: 240,
-                                minSize: 1,
-                                upscale: 1,
-                                url:
-                                  Obj.art +
-                                  '?X-Plex-Token=' +
-                                  Obj.server.accessToken,
-                                'X-Plex-Token': Obj.server.accessToken,
-                              }) || NoArt
-                          }
-                          onError={({ currentTarget }) => {
-                            currentTarget.onerror = null; // prevents looping
-                            currentTarget.src = NoArt;
-                          }}
-                        />
-                        <CardContent>
-                          <Typography noWrap>{Obj.title}</Typography>
-                        </CardContent>
-                      </CardActionArea>
-                    </Card>
-                  </Grid>
-                ))}
-            </Grid>
+            <List>
+              <ListItem key="HomeTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(0);
+                    setPageNumber(0);
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Home}</ListItemIcon>
+                  <ListItemText primary="Home" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="LibrariesTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(1);
+                    setPageNumber(0);
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemText primary="Libraries" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="ArtistsTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(2);
+                    topic !== 'artists' && setLibraryItems([]);
+                    setPageNumber(0);
+                    setTopic('artists');
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemText primary="Artists" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="AlbumsTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(2);
+                    topic !== 'albums' && setLibraryItems([]);
+                    setPageNumber(0);
+                    setTopic('albums');
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemText primary="Albums" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="SongsTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(2);
+                    topic !== 'songs' && setLibraryItems([]);
+                    setPageNumber(0);
+                    setTopic('songs');
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemText primary="Songs" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="PlaylistsTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(5);
+                    setPageNumber(0);
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
+                  <ListItemText primary="Playlists" />
+                </ListItemButton>
+              </ListItem>
+              <Divider />
+              <ListItem key="SettingsTab" disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    setActivePage(6);
+                    setPageNumber(0);
+                  }}
+                >
+                  <ListItemIcon>{iconindex.Settings}</ListItemIcon>
+                  <ListItemText primary="Settings" />
+                </ListItemButton>
+              </ListItem>
+            </List>
+          </Drawer>
+          <Box
+            hidden={isHidden(0)}
+            component="main"
+            sx={{
+              overflow: 'hidden',
+              flexGrow: 1,
+              maxWidth: self.innerWidth - drawerWidth,
+              bgcolor: 'background.default',
+              p: 3,
+            }}
+            label="Home"
+            TransitionProps={{
+              unmountOnExit: true,
+              timeout: 200,
+            }}
+          >
+            <Toolbar />
+            {musicHubs?.map((Obj) => {
+              if (Obj.size > 0) {
+                return (
+                  <div>
+                    {Obj.title}
+                    <ImageList
+                      direction="row"
+                      sx={{
+                        overflow: 'scroller',
+                        flexGrow: 1,
+                        margin: 4,
+                        gridAutoFlow: 'column',
+                        gridTemplateColumns:
+                          'repeat(auto-fill,minmax(240px,1fr)) !important',
+                        gridAutoColumns: 'minmax(240px, 1fr)',
+                      }}
+                    >
+                      {Obj.Metadata?.map((listItem) => {
+                        return (
+                          <ImageListItem>
+                            <Card sx={{ margin: 1, minWidth: 240 }}>
+                              <CardMedia
+                                component="img"
+                                height="240"
+                                width="240"
+                                image={listItem.thumb || NoArt}
+                                onError={({ currentTarget }) => {
+                                  currentTarget.onerror = null; // prevents looping
+                                  currentTarget.src = NoArt;
+                                }}
+                              />
+                              <CardContent>
+                                <Typography noWrap>{listItem.title}</Typography>
+                              </CardContent>
+                            </Card>
+                          </ImageListItem>
+                        );
+                      })}
+                    </ImageList>
+                  </div>
+                );
+              }
+              return null;
+            })}
           </Box>
-        </Box>
-        <Box
-          hidden={isHidden(2)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="ItemLibrary"
-          TransitionProps={{
-            timeout: 100,
-          }}
-        >
-          <Toolbar />
-          <Box sx={{}} loading="lazy">
-            <Grid container spacing={2}>
-              {libraryItems?.sort()?.map((Obj, index) => {
-                if (libraryItems?.length === index + 10) {
+          <Box
+            hidden={isHidden(1)}
+            component="main"
+            sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+            label="Library"
+          >
+            <Toolbar />
+            <Box sx={{ flexGrow: 1 }}>
+              <Grid container spacing={2} xs>
+                {plexLibraries
+                  ?.filter((Obj) => Obj.type === 'artist')
+                  ?.map((Obj, index) => (
+                    <Grid item xs="auto" key={Obj.guid + index}>
+                      <Card>
+                        <CardActionArea
+                          onClick={() => {
+                            setActivePage(4);
+                            setPageNumber(0);
+                          }}
+                        >
+                          <CardMedia
+                            component="img"
+                            height="240"
+                            image={Obj.thumb || NoArt}
+                            onError={({ currentTarget }) => {
+                              currentTarget.onerror = null; // prevents looping
+                              currentTarget.src = NoArt;
+                            }}
+                          />
+                          <CardContent>
+                            <Typography noWrap>{Obj.title}</Typography>
+                          </CardContent>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
+                  ))}
+              </Grid>
+            </Box>
+          </Box>
+          <Box
+            hidden={isHidden(2)}
+            component="main"
+            sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+            label="ItemLibrary"
+            TransitionProps={{
+              timeout: 100,
+            }}
+          >
+            <Toolbar />
+            <Box sx={{}}>
+              <Grid container spacing={2}>
+                {libraryItems?.sort()?.map((Obj, index) => {
+                  if (libraryItems?.length === index + 10) {
+                    return (
+                      <Grid item xs="auto" key={Obj.guid + index}>
+                        <Card ref={lastLibraryItem}>
+                          <CardActionArea
+                            onClick={() => {
+                              setActivePage(4);
+                            }}
+                          >
+                            <CardMedia
+                              loading="lazy"
+                              component="img"
+                              height="240"
+                              width="240"
+                              image={Obj.thumb || NoArt}
+                              onError={({ currentTarget }) => {
+                                currentTarget.onerror = null; // prevents looping
+                                currentTarget.src = NoArt;
+                              }}
+                            />
+                            <CardContent>
+                              <Typography noWrap>{Obj.title}</Typography>
+                            </CardContent>
+                          </CardActionArea>
+                        </Card>
+                      </Grid>
+                    );
+                  }
                   return (
-                    <Grid item xs={3} key={Obj.guid + index}>
-                      <Card ref={lastLibraryItem}>
+                    <Grid item xs="auto" key={Obj.guid + index}>
+                      <Card sx={{ width: 240 }}>
                         <CardActionArea
                           onClick={() => {
                             setActivePage(4);
@@ -497,21 +575,8 @@ function App() {
                             loading="lazy"
                             component="img"
                             height="240"
-                            image={
-                              Obj.server.preferredConnection.uri +
-                                '/photo/:/transcode?' +
-                                qs.stringify({
-                                  width: 240,
-                                  height: 240,
-                                  minSize: 1,
-                                  upscale: 1,
-                                  url:
-                                    Obj.thumb +
-                                    '?X-Plex-Token=' +
-                                    Obj.server.accessToken,
-                                  'X-Plex-Token': Obj.server.accessToken,
-                                }) || NoArt
-                            }
+                            sx={{ width: 240 }}
+                            image={Obj.thumb || NoArt}
                             onError={({ currentTarget }) => {
                               currentTarget.onerror = null; // prevents looping
                               currentTarget.src = NoArt;
@@ -524,281 +589,245 @@ function App() {
                       </Card>
                     </Grid>
                   );
-                }
-                return (
-                  <Grid item xs={3} key={Obj.guid + index}>
-                    <Card>
-                      <CardActionArea
-                        onClick={() => {
-                          setActivePage(4);
-                        }}
-                      >
-                        <CardMedia
-                          loading="lazy"
-                          component="img"
-                          height="240"
-                          image={
-                            Obj.server.preferredConnection.uri +
-                              '/photo/:/transcode?' +
-                              qs.stringify({
-                                width: 240,
-                                height: 240,
-                                minSize: 1,
-                                upscale: 1,
-                                url:
-                                  Obj.thumb +
-                                  '?X-Plex-Token=' +
-                                  Obj.server.accessToken,
-                                'X-Plex-Token': Obj.server.accessToken,
-                              }) || NoArt
+                })}
+              </Grid>
+            </Box>
+          </Box>
+          <Box
+            hidden={isHidden(5)}
+            component="main"
+            sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+            label="Playlists"
+            TransitionProps={{
+              unmountOnExit: true,
+
+              timeout: 100,
+            }}
+          >
+            <Toolbar />
+            <Typography paragraph>
+              This will be the Playlists page of my App
+            </Typography>
+          </Box>
+          <Box
+            hidden={isHidden(6)}
+            component="main"
+            sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
+            label="Settings"
+            TransitionProps={{
+              unmountOnExit: true,
+
+              timeout: 100,
+            }}
+          >
+            <Toolbar />
+
+            <Grid container spacing={1}>
+              <Grid item xs={12}>
+                <Typography sx={{ flexGrow: 1 }} component="div">
+                  Warden
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography sx={{ flexGrow: 1 }} component="div">
+                  Local App Data:
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Typography sx={{ flexGrow: 1 }} component="div">
+                  UUID:{plexClientInformation?.clientIdentifier}
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Divider />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography sx={{ flexGrow: 1 }} component="div">
+                  Accounts:
+                </Typography>
+              </Grid>
+              <Grid item xs={12}>
+                <Grid container spacing={1}>
+                  <Grid item xs={12}>
+                    <Grid item xs={12}>
+                      <Card variant="outlined">
+                        <CardHeader
+                          avatar={
+                            <Avatar
+                              alt={plexTVUserData?.friendlyName}
+                              src={plexTVUserData?.thumb}
+                              sx={{ width: 56, height: 56 }}
+                            />
                           }
-                          onError={({ currentTarget }) => {
-                            currentTarget.onerror = null; // prevents looping
-                            currentTarget.src = NoArt;
-                          }}
+                          action={
+                            <div>
+                              <Button
+                                onClick={() => Refresh()}
+                                variant="outlined"
+                                sx={{ margin: 1 }}
+                              >
+                                Refresh
+                              </Button>
+                              <Button
+                                onClick={() => PlexLoginButton()}
+                                variant="outlined"
+                                sx={{ margin: 1 }}
+                              >
+                                Login
+                              </Button>
+
+                              <Button
+                                onClick={() => PlexLogoutButton()}
+                                variant="outlined"
+                                sx={{ margin: 1 }}
+                              >
+                                Logout
+                              </Button>
+                            </div>
+                          }
+                          title="Plex Account"
+                          subheader={`Username: ${
+                            plexTVUserData?.username
+                              ? plexTVUserData?.username
+                              : null
+                          }`}
                         />
                         <CardContent>
-                          <Typography noWrap>{Obj.title}</Typography>
-                        </CardContent>
-                      </CardActionArea>
-                    </Card>
-                  </Grid>
-                );
-              })}
-            </Grid>
-          </Box>
-        </Box>
-        <Box
-          hidden={isHidden(5)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Playlists"
-          TransitionProps={{
-            unmountOnExit: true,
-
-            timeout: 100,
-          }}
-        >
-          <Toolbar />
-          <Typography paragraph>
-            This will be the Playlists page of my App
-          </Typography>
-        </Box>
-        <Box
-          hidden={isHidden(6)}
-          component="main"
-          sx={{ flexGrow: 1, bgcolor: 'background.default', p: 3 }}
-          label="Settings"
-          TransitionProps={{
-            unmountOnExit: true,
-
-            timeout: 100,
-          }}
-        >
-          <Toolbar />
-
-          <Grid container spacing={1}>
-            <Grid item xs={12}>
-              <Typography sx={{ flexGrow: 1 }} component="div">
-                Warden
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography sx={{ flexGrow: 1 }} component="div">
-                Local App Data:
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Typography sx={{ flexGrow: 1 }} component="div">
-                UUID:{plexClientInformation?.clientIdentifier}
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Divider />
-            </Grid>
-            <Grid item xs={12}>
-              <Typography sx={{ flexGrow: 1 }} component="div">
-                Accounts:
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <Grid container spacing={1}>
-                <Grid item xs={12}>
-                  <Grid item xs={12}>
-                    <Card variant="outlined">
-                      <CardHeader
-                        avatar={
-                          <Avatar
-                            alt={plexTVUserData?.friendlyName}
-                            src={plexTVUserData?.thumb}
-                            sx={{ width: 56, height: 56 }}
-                          />
-                        }
-                        action={
-                          <div>
-                            <Button
-                              onClick={() => Refresh()}
-                              variant="outlined"
-                              sx={{ margin: 1 }}
-                            >
-                              Refresh
-                            </Button>
-                            <Button
-                              onClick={() => PlexLoginButton()}
-                              variant="outlined"
-                              sx={{ margin: 1 }}
-                            >
-                              Login
-                            </Button>
-
-                            <Button
-                              onClick={() => PlexLogoutButton()}
-                              variant="outlined"
-                              sx={{ margin: 1 }}
-                            >
-                              Logout
-                            </Button>
-                          </div>
-                        }
-                        title="Plex Account"
-                        subheader={`Username: ${
-                          plexTVUserData?.username
-                            ? plexTVUserData?.username
-                            : null
-                        }`}
-                      />
-                      <CardContent>
-                        <Accordion
-                          variant="dense"
-                          TransitionProps={{
-                            unmountOnExit: true,
-                          }}
-                        >
-                          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                            <Typography
-                              sx={{ flexGrow: 1 }}
-                              component="div"
-                              variant="h7"
-                            >
-                              Account Details
-                            </Typography>
-                          </AccordionSummary>
-                          <AccordionDetails>
-                            <Grid container spacing={1}>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  Username: {plexTVUserData?.username}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  Email: {plexTVUserData?.email}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  Account Status:{' '}
-                                  {plexTVUserData?.subscriptionDescription}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  Plex Auth Token: {plexTVAuthToken || null}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  {'       '}
-                                </Typography>
-                              </Grid>
-                              <Grid item xs={12}>
-                                <Typography
-                                  sx={{ flexGrow: 1 }}
-                                  component="div"
-                                >
-                                  Servers:
-                                </Typography>
-                              </Grid>
-                              <TableContainer component={Paper}>
-                                <Table
-                                  sx={{ flexGrow: 1 }}
-                                  size="small"
-                                  aria-label="a dense table"
-                                >
-                                  <TableHead>
-                                    <TableRow>
-                                      <TableCell>Name</TableCell>
-                                      <TableCell align="right">
-                                        Public IP
-                                      </TableCell>
-                                      <TableCell align="right">
-                                        Platform
-                                      </TableCell>
-                                      <TableCell align="right">Yours</TableCell>
-                                      <TableCell align="right">
-                                        Connection
-                                      </TableCell>
-                                    </TableRow>
-                                  </TableHead>
-                                  <TableBody>
-                                    {plexServers?.map((row) => (
-                                      <TableRow
-                                        key={row.name}
-                                        sx={{
-                                          '&:last-child td, &:last-child th': {
-                                            border: 0,
-                                          },
-                                        }}
-                                      >
-                                        <TableCell component="th" scope="row">
-                                          {row?.name}
+                          <Accordion
+                            variant="dense"
+                            TransitionProps={{
+                              unmountOnExit: true,
+                            }}
+                          >
+                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                              <Typography
+                                sx={{ flexGrow: 1 }}
+                                component="div"
+                                variant="h7"
+                              >
+                                Account Details
+                              </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <Grid container spacing={1}>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    Username: {plexTVUserData?.username}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    Email: {plexTVUserData?.email}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    Account Status:{' '}
+                                    {plexTVUserData?.subscriptionDescription}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    Plex Auth Token: {plexTVAuthToken || null}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    {'       '}
+                                  </Typography>
+                                </Grid>
+                                <Grid item xs={12}>
+                                  <Typography
+                                    sx={{ flexGrow: 1 }}
+                                    component="div"
+                                  >
+                                    Servers:
+                                  </Typography>
+                                </Grid>
+                                <TableContainer component={Paper}>
+                                  <Table
+                                    sx={{ flexGrow: 1 }}
+                                    size="small"
+                                    aria-label="a dense table"
+                                  >
+                                    <TableHead>
+                                      <TableRow>
+                                        <TableCell>Name</TableCell>
+                                        <TableCell align="right">
+                                          Public IP
                                         </TableCell>
                                         <TableCell align="right">
-                                          {row?.publicAddress}
+                                          Platform
                                         </TableCell>
                                         <TableCell align="right">
-                                          {row?.platform}
+                                          Yours
                                         </TableCell>
                                         <TableCell align="right">
-                                          {row?.owned ? 'Yes' : 'No'}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                          {row?.publicAddressMatches
-                                            ? 'Local'
-                                            : 'Remote'}
+                                          Connection
                                         </TableCell>
                                       </TableRow>
-                                    ))}
-                                  </TableBody>
-                                </Table>
-                              </TableContainer>
-                            </Grid>
-                          </AccordionDetails>
-                        </Accordion>
-                      </CardContent>
-                    </Card>
+                                    </TableHead>
+                                    <TableBody>
+                                      {plexServers?.map((row) => (
+                                        <TableRow
+                                          key={row.name}
+                                          sx={{
+                                            '&:last-child td, &:last-child th':
+                                              {
+                                                border: 0,
+                                              },
+                                          }}
+                                        >
+                                          <TableCell component="th" scope="row">
+                                            {row?.name}
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            {row?.publicAddress}
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            {row?.platform}
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            {row?.owned ? 'Yes' : 'No'}
+                                          </TableCell>
+                                          <TableCell align="right">
+                                            {row?.publicAddressMatches
+                                              ? 'Local'
+                                              : 'Remote'}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </TableContainer>
+                              </Grid>
+                            </AccordionDetails>
+                          </Accordion>
+                        </CardContent>
+                      </Card>
+                    </Grid>
                   </Grid>
                 </Grid>
               </Grid>
             </Grid>
-          </Grid>
+          </Box>
         </Box>
-      </Box>
+      </CssBaseline>
     </ThemeProvider>
   );
 }
