@@ -3,7 +3,7 @@
 /* eslint-disable react/no-array-index-key */
 /* eslint-disable prefer-template */
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 
 import Box from '@mui/material/Box';
@@ -44,6 +44,7 @@ import {
   Grid,
   Icon,
   IconButton,
+  StepButton,
   TextareaAutosize,
   TextField,
 } from '@mui/material';
@@ -55,7 +56,7 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Paper from '@mui/material/Paper';
 
-import ReactJkMusicPlayer from 'react-jinke-music-player';
+import { Howl, Howler } from 'howler';
 import XMLParser from 'react-xml-parser';
 import {
   CreatePlexClientInformation,
@@ -111,6 +112,7 @@ function App() {
 
   const [query, setQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
   const [topic, setTopic] = useState();
 
   function handleSearch(event) {
@@ -195,6 +197,7 @@ function App() {
   // }, [pageNumber, topic, query, plexSessionData]);
 
   async function UpdateLibrary() {
+    setIsLoading(true);
     console.log("I'M HERE");
     let returnObject = await GetLibraryPages(
       plexServers,
@@ -204,13 +207,28 @@ function App() {
       50
     );
     console.log(returnObject);
-    if (libraryItems.length > 0) {
-      returnObject.items = [...returnObject.items, ...libraryItems];
-    }
+    returnObject.items = [...new Set([...libraryItems, ...returnObject.items])];
 
     setLibraryItems(returnObject.items);
     setLibraryHasMore(returnObject.hasMore);
+    setIsLoading(false);
   }
+
+  const observer = useRef();
+  const lastLibraryItem = useCallback(
+    (node) => {
+      if (isLoading) return;
+      if (observer.current) observer.current.disconnect();
+      observer.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && libraryHasMore) {
+          setPageNumber(pageNumber + 1);
+        }
+      });
+      if (node) observer.current.observe(node);
+      console.log(node);
+    },
+    [isLoading, libraryHasMore]
+  );
 
   useEffect(() => {
     setLibraryItems([]);
@@ -299,6 +317,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(0);
+                  setPageNumber(0);
                 }}
               >
                 <ListItemIcon>{iconindex.Home}</ListItemIcon>
@@ -310,6 +329,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(1);
+                  setPageNumber(0);
                 }}
               >
                 <ListItemIcon>{iconindex.Library}</ListItemIcon>
@@ -322,6 +342,7 @@ function App() {
                 onClick={() => {
                   setActivePage(2);
                   topic !== 'artists' && setLibraryItems([]);
+                  setPageNumber(0);
                   setTopic('artists');
                 }}
               >
@@ -335,6 +356,7 @@ function App() {
                 onClick={() => {
                   setActivePage(2);
                   topic !== 'albums' && setLibraryItems([]);
+                  setPageNumber(0);
                   setTopic('albums');
                 }}
               >
@@ -348,6 +370,7 @@ function App() {
                 onClick={() => {
                   setActivePage(2);
                   topic !== 'songs' && setLibraryItems([]);
+                  setPageNumber(0);
                   setTopic('songs');
                 }}
               >
@@ -360,6 +383,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(5);
+                  setPageNumber(0);
                 }}
               >
                 <ListItemIcon>{iconindex.Playlists}</ListItemIcon>
@@ -371,6 +395,7 @@ function App() {
               <ListItemButton
                 onClick={() => {
                   setActivePage(6);
+                  setPageNumber(0);
                 }}
               >
                 <ListItemIcon>{iconindex.Settings}</ListItemIcon>
@@ -409,6 +434,7 @@ function App() {
                       <CardActionArea
                         onClick={() => {
                           setActivePage(4);
+                          setPageNumber(0);
                         }}
                       >
                         <CardMedia
@@ -457,45 +483,88 @@ function App() {
           <Toolbar />
           <Box sx={{}} loading="lazy">
             <Grid container spacing={2}>
-              {libraryItems?.map((Obj, index) => (
-                <Grid item xs={3} key={Obj.guid + index}>
-                  <Card>
-                    <CardActionArea
-                      onClick={() => {
-                        setActivePage(4);
-                      }}
-                    >
-                      <CardMedia
-                        loading="lazy"
-                        component="img"
-                        height="240"
-                        image={
-                          Obj.server.preferredConnection.uri +
-                            '/photo/:/transcode?' +
-                            qs.stringify({
-                              width: 240,
-                              height: 240,
-                              minSize: 1,
-                              upscale: 1,
-                              url:
-                                Obj.thumb +
-                                '?X-Plex-Token=' +
-                                Obj.server.accessToken,
-                              'X-Plex-Token': Obj.server.accessToken,
-                            }) || NoArt
-                        }
-                        onError={({ currentTarget }) => {
-                          currentTarget.onerror = null; // prevents looping
-                          currentTarget.src = NoArt;
+              {libraryItems?.sort()?.map((Obj, index) => {
+                if (libraryItems?.length === index + 10) {
+                  return (
+                    <Grid item xs={3} key={Obj.guid + index}>
+                      <Card ref={lastLibraryItem}>
+                        <CardActionArea
+                          onClick={() => {
+                            setActivePage(4);
+                          }}
+                        >
+                          <CardMedia
+                            loading="lazy"
+                            component="img"
+                            height="240"
+                            image={
+                              Obj.server.preferredConnection.uri +
+                                '/photo/:/transcode?' +
+                                qs.stringify({
+                                  width: 240,
+                                  height: 240,
+                                  minSize: 1,
+                                  upscale: 1,
+                                  url:
+                                    Obj.thumb +
+                                    '?X-Plex-Token=' +
+                                    Obj.server.accessToken,
+                                  'X-Plex-Token': Obj.server.accessToken,
+                                }) || NoArt
+                            }
+                            onError={({ currentTarget }) => {
+                              currentTarget.onerror = null; // prevents looping
+                              currentTarget.src = NoArt;
+                            }}
+                          />
+                          <CardContent>
+                            <Typography noWrap>{Obj.title}</Typography>
+                          </CardContent>
+                        </CardActionArea>
+                      </Card>
+                    </Grid>
+                  );
+                }
+                return (
+                  <Grid item xs={3} key={Obj.guid + index}>
+                    <Card>
+                      <CardActionArea
+                        onClick={() => {
+                          setActivePage(4);
                         }}
-                      />
-                      <CardContent>
-                        <Typography noWrap>{Obj.title}</Typography>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
-                </Grid>
-              ))}
+                      >
+                        <CardMedia
+                          loading="lazy"
+                          component="img"
+                          height="240"
+                          image={
+                            Obj.server.preferredConnection.uri +
+                              '/photo/:/transcode?' +
+                              qs.stringify({
+                                width: 240,
+                                height: 240,
+                                minSize: 1,
+                                upscale: 1,
+                                url:
+                                  Obj.thumb +
+                                  '?X-Plex-Token=' +
+                                  Obj.server.accessToken,
+                                'X-Plex-Token': Obj.server.accessToken,
+                              }) || NoArt
+                          }
+                          onError={({ currentTarget }) => {
+                            currentTarget.onerror = null; // prevents looping
+                            currentTarget.src = NoArt;
+                          }}
+                        />
+                        <CardContent>
+                          <Typography noWrap>{Obj.title}</Typography>
+                        </CardContent>
+                      </CardActionArea>
+                    </Card>
+                  </Grid>
+                );
+              })}
             </Grid>
           </Box>
         </Box>

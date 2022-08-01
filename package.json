@@ -125,6 +125,7 @@
     "electron-util": "^0.17.2",
     "fs": "^0.0.1-security",
     "gh-pages": "^4.0.0",
+    "howler": "^2.2.3",
     "http-browserify": "^1.7.0",
     "https-browserify": "^1.0.0",
     "ipaddr.js": "^2.0.1",

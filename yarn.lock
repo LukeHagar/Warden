@@ -5418,6 +5418,11 @@
   dependencies:
     "lru-cache" "^6.0.0"
 
+"howler@^2.2.3":
+  "integrity" "sha512-QM0FFkw0LRX1PR8pNzJVAY25JhIWvbKMBFM4gqk+QdV+kPXOhleWGCB6AiAF/goGjIHK2e/nIElplvjQwhr0jg=="
+  "resolved" "https://registry.npmjs.org/howler/-/howler-2.2.3.tgz"
+  "version" "2.2.3"
+
 "hpack.js@^2.1.6":
   "integrity" "sha512-zJxVehUdMGIKsRaNt7apO2Gqp0BdqW5yaiGHXXmbpvxgBYVZnAql+BJb4RO5ad2MgpbZKn5G6nMnegrH1FcNYQ=="
   "resolved" "https://registry.npmjs.org/hpack.js/-/hpack.js-2.1.6.tgz"
@@ -7870,9 +7875,9 @@
   "version" "1.1.0"
 
 "plex-api-oauth@^1.0.4":
-  "integrity" "sha512-nuH3BJBN/UXGRNp6n2lts/Zw1gpbrXFqLaHS+16UToqjM0v4kk/bjP+nV2LXmAAM+a9uamNLI94oTwZT5tTByg=="
-  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.1.98.tgz"
-  "version" "1.1.98"
+  "integrity" "sha512-PgUJ62StsmEkzEjWRBXRwRgDe5XUmPB5AxMfBXsrqibduv0upnj3pUvtLWqsPJj3l3+FcTLDw+0Yy2ozvjOWKA=="
+  "resolved" "https://registry.npmjs.org/plex-api-oauth/-/plex-api-oauth-1.1.103.tgz"
+  "version" "1.1.103"
   dependencies:
     "axios" "^0.27.2"
     "plex-oauth" "^2.0.2"
