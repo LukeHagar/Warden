@@ -25,6 +25,7 @@ import FeaturedPlayListIcon from '@mui/icons-material/FeaturedPlayList';
 import AlbumIcon from '@mui/icons-material/Album';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PersonIcon from '@mui/icons-material/Person';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import FormatColorResetIcon from '@mui/icons-material/FormatColorReset';
@@ -85,6 +86,7 @@ const drawerWidth = 240;
 const iconindex = {
   Home: <HomeIcon />,
   Library: <LibraryMusicIcon />,
+  Artist: <PersonIcon />,
   Album: <AlbumIcon />,
   Song: <MusicNoteIcon />,
   Playlists: <FeaturedPlayListIcon />,
@@ -136,17 +138,8 @@ function App() {
     // console.log('🎉 Dark mode is supported');
   }
 
-  const themeBaseline = {
-    components: {
-      MuiCssBaseline: {
-        styleOverrides: ``,
-      },
-    },
-  };
-
   // console.log('🎉 Dark mode is preferred');
   const darkTheme = createTheme({
-    ...themeBaseline,
     palette: {
       mode: 'dark',
     },
@@ -154,7 +147,6 @@ function App() {
 
   // console.log('🎉 Light mode is preferred');
   const lightTheme = createTheme({
-    ...themeBaseline,
     palette: {
       mode: 'light',
     },
@@ -227,19 +219,18 @@ function App() {
   //   setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
   // }, [pageNumber, topic, query, plexSessionData]);
 
-  function ShowArtist(Obj) {
-    setActiveArtist(Obj);
+  function OpenItem(Obj) {
+    switch (Obj.type) {
+      case 'artist':
+        break;
+      case 'album':
+        break;
+      case 'track':
+        break;
+      default:
+        break;
+    }
     setActivePage(7);
-  }
-
-  function ShowAlbum(Obj) {
-    setActiveAlbum(Obj);
-    setActivePage(8);
-  }
-
-  function ShowPlaylist(Obj) {
-    setActivePlaylist(Obj);
-    setActivePage(9);
   }
 
   async function UpdateLibrary() {
@@ -398,7 +389,7 @@ function App() {
                     setTopic('artists');
                   }}
                 >
-                  <ListItemIcon>{iconindex.Library}</ListItemIcon>
+                  <ListItemIcon>{iconindex.Artist}</ListItemIcon>
                   <ListItemText primary="Artists" />
                 </ListItemButton>
               </ListItem>
@@ -466,7 +457,7 @@ function App() {
             sx={{
               overflow: 'auto',
               flexGrow: 1,
-              maxWidth: self.innerWidth - drawerWidth,
+              maxWidth: 'auto',
               bgcolor: 'background.default',
               p: 3,
             }}
@@ -488,7 +479,6 @@ function App() {
                       sx={{
                         'overflow-x': 'scroll',
                         flexGrow: 1,
-                        margin: 4,
                         gridAutoFlow: 'column',
                         gridTemplateColumns:
                           'repeat(auto-fill,minmax(240px,1fr)) !important',
