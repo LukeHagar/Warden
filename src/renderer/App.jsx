@@ -1,3 +1,7 @@
+/* eslint-disable default-case */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react/jsx-props-no-spreading */
+/* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 /* eslint-disable react/jsx-no-bind */
 /* eslint-disable react/no-array-index-key */
@@ -58,6 +62,7 @@ import {
   Grow,
   Slide,
   SnackbarContent,
+  Chip,
 } from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -78,6 +83,7 @@ import {
   LoadPlexSession,
   SavePlexSession,
   GetMusicHub,
+  GetArtistPage,
 } from 'plex-api-oauth';
 import NoArt from './noart.png';
 
@@ -97,7 +103,7 @@ function App() {
   const [activePage, setActivePage] = useState(0);
   const [plexStateTracker, setPlexStateTracker] = useState(0);
 
-  let loadedSession = LoadPlexSession();
+  const loadedSession = LoadPlexSession();
   console.log(loadedSession);
   if (
     loadedSession.plexClientInformation === null ||
@@ -119,6 +125,7 @@ function App() {
   const [plexLibraries, setPlexLibraries] = useState();
 
   const [musicHubs, setMusicHubs] = useState([]);
+  const [itemPageData, setItemPageData] = useState('null');
 
   const [libraryItems, setLibraryItems] = useState([]);
   const [libraryHasMore, setLibraryHasMore] = useState(false);
@@ -219,23 +226,36 @@ function App() {
   //   setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
   // }, [pageNumber, topic, query, plexSessionData]);
 
-  function OpenItem(Obj) {
+  async function OpenItem(Obj) {
+    let tempItemData = null;
     switch (Obj.type) {
       case 'artist':
+        tempItemData = await GetArtistPage(
+          plexClientInformation,
+          plexServers,
+          plexLibraries,
+          Obj
+        );
         break;
       case 'album':
-        break;
-      case 'track':
+        tempItemData = await GetAlbumPage(
+          plexClientInformation,
+          plexServers,
+          plexLibraries,
+          Obj
+        );
         break;
       default:
         break;
     }
+    console.log(tempItemData);
+    setItemPageData(tempItemData);
     setActivePage(7);
   }
 
   async function UpdateLibrary() {
     setIsLoading(true);
-    let returnObject = await GetLibraryPages(
+    const returnObject = await GetLibraryPages(
       plexServers,
       plexLibraries,
       topic,
@@ -243,9 +263,11 @@ function App() {
       100
     );
     console.log(returnObject);
-    returnObject.items = [...new Set([...libraryItems, ...returnObject.items])];
+    const tempItemArray = Array.from([
+      ...new Set([...libraryItems, ...returnObject.items]),
+    ]);
 
-    setLibraryItems(returnObject.items);
+    setLibraryItems(tempItemArray);
     setLibraryHasMore(returnObject.hasMore);
     setIsLoading(false);
   }
@@ -277,6 +299,8 @@ function App() {
 
   useEffect(() => {
     setIsRefreshing(true);
+    setLibraryItems([]);
+    setLibraryHasMore(false);
     Refresh();
   }, []);
 
@@ -294,6 +318,8 @@ function App() {
   console.log('Plex Library Data:');
   console.log(libraryItems);
   console.log(libraryHasMore);
+  console.log('Item Page Data:');
+  console.log(itemPageData);
   console.log('Hubs:');
   console.log(musicHubs);
   console.log('Search Data:');
@@ -304,10 +330,6 @@ function App() {
       return false;
     }
     return true;
-  }
-
-  function loginHidden() {
-    return false;
   }
 
   return (
@@ -477,7 +499,6 @@ function App() {
                       gap={15}
                       direction="row"
                       sx={{
-                        'overflow-x': 'scroll',
                         flexGrow: 1,
                         gridAutoFlow: 'column',
                         gridTemplateColumns:
@@ -488,11 +509,11 @@ function App() {
                       {Obj.Metadata?.map((listItem) => {
                         return (
                           <ImageListItem>
-                            <Card sx={{ margin: 1, minWidth: 240 }}>
+                            <Card sx={{ margin: 1, minWidth: 165 }}>
                               <CardMedia
                                 component="img"
-                                height="240"
-                                width="240"
+                                height="165"
+                                width="165"
                                 loading="lazy"
                                 image={listItem.thumb || NoArt}
                                 onError={({ currentTarget }) => {
@@ -571,48 +592,117 @@ function App() {
             <Toolbar />
             <Box sx={{}}>
               <Grid container spacing={2}>
-                {libraryItems?.sort()?.map((Obj, index) => {
-                  if (libraryItems?.length === index + 10) {
+                {libraryItems?.map((Obj, index) => {
+                  if (topic === 'songs') {
+                    if (libraryItems?.length === index + 10) {
+                      return (
+                        <Grid item xs="auto" key={Obj.guid + index}>
+                          <Card ref={lastLibraryItem}>
+                            <CardActionArea
+                              onClick={() => {
+                                OpenItem(Obj);
+                              }}
+                            >
+                              {/* <CardMedia
+                                loading="lazy"
+                                component="img"
+                                height="240"
+                                width="240"
+                                image={Obj.thumb || NoArt}
+                                onError={({ currentTarget }) => {
+                                  currentTarget.onerror = null; // prevents looping
+                                  currentTarget.src = NoArt;
+                                }}
+                              /> */}
+                              <CardContent>
+                                <Typography variant="h6" noWrap>
+                                  {Obj.title}
+                                </Typography>
+                                <Typography variant="p7" noWrap>
+                                  {Obj.parentTitle}
+                                </Typography>
+                              </CardContent>
+                            </CardActionArea>
+                          </Card>
+                        </Grid>
+                      );
+                    }
                     return (
                       <Grid item xs="auto" key={Obj.guid + index}>
-                        <Card ref={lastLibraryItem}>
+                        <Card sx={{ width: 240 }}>
                           <CardActionArea
                             onClick={() => {
-                              setActivePage(4);
+                              OpenItem(Obj);
                             }}
                           >
-                            <CardMedia
+                            {/* <CardMedia
                               loading="lazy"
                               component="img"
                               height="240"
-                              width="240"
+                              sx={{ width: 240 }}
                               image={Obj.thumb || NoArt}
                               onError={({ currentTarget }) => {
                                 currentTarget.onerror = null; // prevents looping
                                 currentTarget.src = NoArt;
                               }}
-                            />
+                            /> */}
                             <CardContent>
-                              <Typography noWrap>{Obj.title}</Typography>
+                              <Typography variant="h6" noWrap>
+                                {Obj.title}
+                              </Typography>
+                              <Typography variant="p7" noWrap>
+                                {Obj.grandparentTitle} - {Obj.parentTitle}
+                              </Typography>
                             </CardContent>
                           </CardActionArea>
                         </Card>
                       </Grid>
                     );
                   }
+                  if (libraryItems?.length === index + 10) {
+                    return (
+                      <Grid item xs="auto" key={Obj.guid + index}>
+                        <Card ref={lastLibraryItem}>
+                          <CardActionArea
+                            onClick={() => {
+                              OpenItem(Obj);
+                            }}
+                          >
+                            <CardMedia
+                              loading="lazy"
+                              component="img"
+                              height="165"
+                              width="165"
+                              image={Obj.thumb || NoArt}
+                              onError={({ currentTarget }) => {
+                                currentTarget.onerror = null; // prevents looping
+                                currentTarget.src = NoArt;
+                              }}
+                            />
+                          </CardActionArea>
+                        </Card>
+                        <Typography variant="body1" noWrap>
+                          {Obj.title}
+                        </Typography>
+                        <Typography variant="body2" noWrap>
+                          {Obj.parentTitle}
+                        </Typography>
+                      </Grid>
+                    );
+                  }
                   return (
                     <Grid item xs="auto" key={Obj.guid + index}>
-                      <Card sx={{ width: 240 }}>
+                      <Card sx={{ width: 165 }}>
                         <CardActionArea
                           onClick={() => {
-                            setActivePage(4);
+                            OpenItem(Obj);
                           }}
                         >
                           <CardMedia
                             loading="lazy"
                             component="img"
-                            height="240"
-                            sx={{ width: 240 }}
+                            height="165"
+                            sx={{ width: 165 }}
                             image={Obj.thumb || NoArt}
                             onError={({ currentTarget }) => {
                               currentTarget.onerror = null; // prevents looping
@@ -620,7 +710,12 @@ function App() {
                             }}
                           />
                           <CardContent>
-                            <Typography noWrap>{Obj.title}</Typography>
+                            <Typography variant="body1" noWrap>
+                              {Obj.title}
+                            </Typography>
+                            <Typography variant="body2" noWrap>
+                              {Obj.parentTitle}
+                            </Typography>
                           </CardContent>
                         </CardActionArea>
                       </Card>
@@ -876,6 +971,121 @@ function App() {
                     </Grid>
                   </Grid>
                 </Grid>
+              </Grid>
+            </Grid>
+          </Box>
+          <Box
+            hidden={isHidden(7)}
+            component="main"
+            sx={{
+              flexGrow: 1,
+              flexShrink: 1,
+              bgcolor: 'background.default',
+              p: 3,
+            }}
+            label="ItemPage"
+            TransitionProps={{
+              unmountOnExit: true,
+
+              timeout: 100,
+            }}
+          >
+            <Toolbar />
+            {itemPageData !== 'null' &&
+              itemPageData.inputObject.type === 'artist' &&
+              [1].map(() => {
+                return (
+                  <div>
+                    <Box>
+                      <Typography variant="h4" margin={1} alight="left">
+                        {itemPageData.response.MediaContainer.parentTitle}
+                      </Typography>
+                      <Typography variant="body2" margin={1} align="left">
+                        {itemPageData.response.MediaContainer.size} Albums
+                      </Typography>
+                    </Box>
+                    <Divider />
+                    <Accordion margin={4}>
+                      <AccordionSummary>Summary</AccordionSummary>
+                      <AccordionDetails>
+                        <Typography
+                          paragraph
+                          sx={{ margin: 1 }}
+                          variant="body2"
+                        >
+                          {itemPageData.response.MediaContainer.summary}
+                        </Typography>
+                      </AccordionDetails>
+                    </Accordion>
+                  </div>
+                );
+              })}
+            <Grid container spacing={2}>
+              <Grid item xs="auto">
+                <Box sx={{ margin: 2, flexGrow: 1, flexShrink: 1 }}>
+                  <Grid overflow={'auto'} container spacing={2}>
+                    {itemPageData !== 'null' &&
+                      itemPageData.inputObject.type === 'artist' &&
+                      itemPageData.albums.map((Obj, index) => {
+                        return (
+                          <Grid
+                            item
+                            xs="auto"
+                            key={Obj.guid + index}
+                            margin={1}
+                          >
+                            <Card sx={{ width: 240 }}>
+                              <CardActionArea
+                                onClick={() => {
+                                  OpenItem(Obj);
+                                }}
+                              >
+                                <CardMedia
+                                  loading="lazy"
+                                  component="img"
+                                  height="240"
+                                  sx={{ width: 240 }}
+                                  image={Obj.thumb || NoArt}
+                                  onError={({ currentTarget }) => {
+                                    currentTarget.onerror = null; // prevents looping
+                                    currentTarget.src = NoArt;
+                                  }}
+                                />
+                                <CardContent>
+                                  <Typography variant="h6" noWrap>
+                                    {Obj.title}
+                                  </Typography>
+                                  <Typography variant="p7" noWrap>
+                                    {Obj.parentTitle}
+                                  </Typography>
+                                </CardContent>
+                              </CardActionArea>
+                            </Card>
+                          </Grid>
+                        );
+                      })}
+                  </Grid>
+                </Box>
+              </Grid>
+              <Grid item xs="auto">
+                <Box sx={{ margin: '2', flexGrow: 1 }}>
+                  <Stack margin={4} spacing={1}>
+                    {itemPageData !== 'null' &&
+                      itemPageData.inputObject.type === 'artist' &&
+                      itemPageData.songs.map((Obj) => {
+                        return (
+                          <Card>
+                            <CardContent>
+                              <Typography variant="h6">{Obj.title}</Typography>
+                              <Typography variant="body2">
+                                {Obj.parentTitle}
+                              </Typography>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                  </Stack>
+                </Box>
               </Grid>
             </Grid>
           </Box>
