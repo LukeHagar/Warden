@@ -63,6 +63,8 @@ import {
   Slide,
   SnackbarContent,
   Chip,
+  CardActions,
+  ListItemAvatar,
 } from '@mui/material';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -84,6 +86,7 @@ import {
   SavePlexSession,
   GetMusicHub,
   GetArtistPage,
+  GetPlexDevices,
 } from 'plex-api-oauth';
 import NoArt from './noart.png';
 
@@ -121,6 +124,7 @@ function App() {
     loadedSession.plexTVAuthToken
   );
   const [plexServers, setPlexServers] = useState();
+  const [plexDevices, setPlexDevices] = useState();
   const [plexTVUserData, setPlexTVUserData] = useState();
   const [plexLibraries, setPlexLibraries] = useState();
 
@@ -130,7 +134,7 @@ function App() {
   const [libraryItems, setLibraryItems] = useState([]);
   const [libraryHasMore, setLibraryHasMore] = useState(false);
   const [searchData, setSearchData] = useState();
-
+  const [libraryFilter, setLibraryFilter] = useState('BOOO');
   const [query, setQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -190,6 +194,15 @@ function App() {
     setPlexStateTracker(plexStateTracker + 1);
   }
 
+  async function UpdateHubs(argPlexServers, argPlexLibraries) {
+    const tempMusicHubs = await GetMusicHub(
+      plexClientInformation,
+      argPlexServers,
+      argPlexLibraries
+    );
+    setMusicHubs(tempMusicHubs);
+  }
+
   async function Refresh() {
     const tempPlexTVUserData = await GetPlexUserData(
       plexClientInformation,
@@ -199,32 +212,18 @@ function App() {
       plexClientInformation,
       plexTVAuthToken
     );
-    const tempPlexLibraries = await GetPlexLibraries(tempPlexServers);
-    const tempMusicHubs = await GetMusicHub(
+    const tempPlexDevices = await GetPlexDevices(
       plexClientInformation,
-      tempPlexServers,
-      tempPlexLibraries
+      plexTVAuthToken
     );
-    setMusicHubs(tempMusicHubs);
+    const tempPlexLibraries = await GetPlexLibraries(tempPlexServers);
+    UpdateHubs(tempPlexServers, tempPlexLibraries);
     setPlexServers(tempPlexServers);
+    setPlexDevices(tempPlexDevices);
     setPlexTVUserData(tempPlexTVUserData);
     setPlexLibraries(tempPlexLibraries);
     setIsRefreshing(false);
   }
-
-  // useEffect(() => {
-  //   const { searchItems, searchHasMore, searchLoading, searchError } =
-  //     GetLibraryPages(
-  //       {
-  //         servers: plexSessionData.plexServers,
-  //         libraries: plexSessionData.plexLibraries,
-  //       },
-  //       topic,
-  //       query,
-  //       pageNumber
-  //     );
-  //   setSearchData({ searchItems, searchHasMore, searchLoading, searchError });
-  // }, [pageNumber, topic, query, plexSessionData]);
 
   async function OpenItem(Obj) {
     let tempItemData = null;
@@ -260,7 +259,7 @@ function App() {
       plexLibraries,
       topic,
       pageNumber,
-      100
+      250
     );
     console.log(returnObject);
     const tempItemArray = Array.from([
@@ -270,6 +269,13 @@ function App() {
     setLibraryItems(tempItemArray);
     setLibraryHasMore(returnObject.hasMore);
     setIsLoading(false);
+  }
+
+  const twofiftyArray = [];
+  let i = 0;
+  while (i < 250) {
+    twofiftyArray.push(i);
+    i += 1;
   }
 
   const observer = useRef();
@@ -289,13 +295,14 @@ function App() {
   );
 
   useEffect(() => {
-    setLibraryItems([]);
-    setLibraryHasMore(false);
-  }, [topic]);
+    UpdateLibrary();
+  }, [pageNumber]);
 
   useEffect(() => {
+    setLibraryItems([]);
+    setLibraryHasMore(false);
     UpdateLibrary();
-  }, [pageNumber, plexServers, plexLibraries, topic]);
+  }, [plexServers, plexLibraries, topic]);
 
   useEffect(() => {
     setIsRefreshing(true);
@@ -304,13 +311,16 @@ function App() {
     Refresh();
   }, []);
 
-  console.log('Plex Session:');
-  console.log(plexTVAuthToken);
+  console.info('PlexTV Auth Token:');
+  console.info(plexTVAuthToken);
+  console.log('Plex Client Information:');
   console.log(plexClientInformation);
   console.log('Plex Session Data:');
   console.log(plexTVUserData);
+  console.log('Plex Servers:');
   console.log(plexServers);
-  console.log(plexLibraries);
+  console.log('Plex Devices:');
+  console.log(plexDevices);
   console.log('Topic:');
   console.log(topic);
   console.log('Page Number:');
@@ -354,6 +364,12 @@ function App() {
                 value={query}
                 onChange={handleSearch}
               />
+              <Chip
+                sx={{ marginleft: 3 }}
+                onClick={() => setLibraryFilter(null)}
+                disabled={libraryFilter === null}
+                label="Clear Filter"
+              />
             </Toolbar>
           </AppBar>
           <Drawer
@@ -381,6 +397,7 @@ function App() {
                   onClick={() => {
                     setActivePage(0);
                     setPageNumber(0);
+                    UpdateHubs(plexServers, plexLibraries);
                   }}
                 >
                   <ListItemIcon>{iconindex.Home}</ListItemIcon>
@@ -510,26 +527,30 @@ function App() {
                         return (
                           <ImageListItem>
                             <Card sx={{ margin: 1, minWidth: 165 }}>
-                              <CardMedia
-                                component="img"
-                                height="165"
-                                width="165"
-                                loading="lazy"
-                                image={listItem.thumb || NoArt}
-                                onError={({ currentTarget }) => {
-                                  currentTarget.onerror = null; // prevents looping
-                                  currentTarget.src = NoArt;
-                                }}
-                              />
-                              <CardContent>
-                                <Typography
-                                  variant="h6"
-                                  justifyContent="center"
-                                  noWrap
-                                >
-                                  {listItem.title}
-                                </Typography>
-                              </CardContent>
+                              <CardActionArea
+                                onClick={() => OpenItem(listItem)}
+                              >
+                                <CardMedia
+                                  component="img"
+                                  height="165"
+                                  width="165"
+                                  loading="lazy"
+                                  image={listItem.thumb || NoArt}
+                                  onError={({ currentTarget }) => {
+                                    currentTarget.onerror = null; // prevents looping
+                                    currentTarget.src = NoArt;
+                                  }}
+                                />
+                                <CardContent>
+                                  <Typography
+                                    variant="h6"
+                                    justifyContent="center"
+                                    noWrap
+                                  >
+                                    {listItem.title}
+                                  </Typography>
+                                </CardContent>
+                              </CardActionArea>
                             </Card>
                           </ImageListItem>
                         );
@@ -591,75 +612,41 @@ function App() {
           >
             <Toolbar />
             <Box sx={{}}>
-              <Grid container spacing={2}>
+              <Grid container spacing={1}>
                 {libraryItems?.map((Obj, index) => {
                   if (topic === 'songs') {
-                    if (libraryItems?.length === index + 10) {
+                    if (libraryItems?.length === index + 100) {
                       return (
-                        <Grid item xs="auto" key={Obj.guid + index}>
-                          <Card ref={lastLibraryItem}>
-                            <CardActionArea
-                              onClick={() => {
-                                OpenItem(Obj);
-                              }}
-                            >
-                              {/* <CardMedia
-                                loading="lazy"
-                                component="img"
-                                height="240"
-                                width="240"
-                                image={Obj.thumb || NoArt}
-                                onError={({ currentTarget }) => {
-                                  currentTarget.onerror = null; // prevents looping
-                                  currentTarget.src = NoArt;
-                                }}
-                              /> */}
-                              <CardContent>
-                                <Typography variant="h6" noWrap>
-                                  {Obj.title}
-                                </Typography>
-                                <Typography variant="p7" noWrap>
-                                  {Obj.parentTitle}
-                                </Typography>
-                              </CardContent>
-                            </CardActionArea>
-                          </Card>
+                        <Grid item xs="12" key={Obj.guid + index}>
+                          <ListItem ref={lastLibraryItem}>
+                            <ListItemAvatar>
+                              <Avatar alt={NoArt} src={Obj.thumb} />
+                            </ListItemAvatar>
+                            <Typography variant="h6" noWrap>
+                              {Obj.title} - {Obj.grandparentTitle} -{' '}
+                              {Obj.parentTitle}
+                            </Typography>
+                          </ListItem>
                         </Grid>
                       );
                     }
                     return (
-                      <Grid item xs="auto" key={Obj.guid + index}>
-                        <Card sx={{ width: 240 }}>
-                          <CardActionArea
-                            onClick={() => {
-                              OpenItem(Obj);
-                            }}
-                          >
-                            {/* <CardMedia
-                              loading="lazy"
-                              component="img"
-                              height="240"
-                              sx={{ width: 240 }}
-                              image={Obj.thumb || NoArt}
-                              onError={({ currentTarget }) => {
-                                currentTarget.onerror = null; // prevents looping
-                                currentTarget.src = NoArt;
-                              }}
-                            /> */}
-                            <CardContent>
-                              <Typography variant="h6" noWrap>
-                                {Obj.title}
-                              </Typography>
-                              <Typography variant="p7" noWrap>
-                                {Obj.grandparentTitle} - {Obj.parentTitle}
-                              </Typography>
-                            </CardContent>
-                          </CardActionArea>
-                        </Card>
+                      <Grid item xs="12" key={Obj.guid + index}>
+                        <ListItem ref={lastLibraryItem}>
+                          <ListItemButton>
+                            <ListItemAvatar>
+                              <Avatar alt={NoArt} src={Obj.thumb} />
+                            </ListItemAvatar>
+                            <Typography variant="h6" noWrap>
+                              {Obj.title} - {Obj.grandparentTitle} -{' '}
+                              {Obj.parentTitle}
+                            </Typography>
+                          </ListItemButton>
+                        </ListItem>
                       </Grid>
                     );
                   }
-                  if (libraryItems?.length === index + 10) {
+                  if (libraryItems?.length === index + 100) {
                     return (
                       <Grid item xs="auto" key={Obj.guid + index}>
                         <Card ref={lastLibraryItem}>
@@ -723,14 +710,29 @@ function App() {
                   );
                 })}
                 {isLoading &&
-                  [0, 1, 2, 3].map((Obj, index) => {
+                  topic !== 'songs' &&
+                  twofiftyArray?.map((Obj, index) => {
                     return (
                       <Grid item xs="auto" key={`Skeleton${index}`}>
                         <Skeleton
                           animation="wave"
                           variant="rectangular"
-                          width={240}
-                          height={240}
+                          width={165}
+                          height={165}
+                        />
+                      </Grid>
+                    );
+                  })}
+                {isLoading &&
+                  topic === 'songs' &&
+                  twofiftyArray?.map((Obj, index) => {
+                    return (
+                      <Grid item xs="12" key={`Skeleton${index}`}>
+                        <Skeleton
+                          animation="wave"
+                          variant="text"
+                          fullWidth
+                          height={64}
                         />
                       </Grid>
                     );
@@ -769,14 +771,7 @@ function App() {
 
             <Grid container spacing={1}>
               <Grid item xs={12}>
-                <Typography sx={{ flexGrow: 1 }} component="div">
-                  Warden
-                </Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography sx={{ flexGrow: 1 }} component="div">
-                  Local App Data:
-                </Typography>
+                <Typography sx={{ flexGrow: 1 }}>Local App Data:</Typography>
               </Grid>
               <Grid item xs={12}>
                 <Typography sx={{ flexGrow: 1 }} component="div">
@@ -1001,7 +996,7 @@ function App() {
                         {itemPageData.response.MediaContainer.parentTitle}
                       </Typography>
                       <Typography variant="body2" margin={1} align="left">
-                        {itemPageData.response.MediaContainer.size} Albums
+                        {itemPageData.albums.length} Albums
                       </Typography>
                     </Box>
                     <Divider />
@@ -1020,10 +1015,68 @@ function App() {
                   </div>
                 );
               })}
+
             <Grid container spacing={2}>
-              <Grid item xs="auto">
-                <Box sx={{ margin: 2, flexGrow: 1, flexShrink: 1 }}>
-                  <Grid overflow={'auto'} container spacing={2}>
+              <Grid item xs="12" margin={1}>
+                <Divider />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box sx={{ margin: 2 }}>
+                  <Grid container spacing={0}>
+                    <Grid item xs="12" margin={1}>
+                      <Typography> Songs:</Typography>
+                      {itemPageData !== 'null' &&
+                        itemPageData.songs.length === 0 &&
+                        [1].map(() => {
+                          return (
+                            <Typography variant="body2" noWrap>
+                              No Popular Song Data
+                            </Typography>
+                          );
+                        })}
+                    </Grid>
+                    {itemPageData !== 'null' &&
+                      itemPageData.inputObject.type === 'artist' &&
+                      itemPageData.songs.map((Obj) => {
+                        return (
+                          <Grid item xs={4}>
+                            <ListItem>
+                              <ListItemButton>
+                                <ListItemAvatar>
+                                  <Avatar alt={NoArt} src={Obj.thumb} />
+                                </ListItemAvatar>
+                                <ListItemText>
+                                  <Typography variant="body2" noWrap>
+                                    {Obj.title} - {Obj.parentTitle}
+                                  </Typography>
+                                  <Typography variant="body2" noWrap>
+                                    {Obj.grandparentTitle}
+                                  </Typography>
+                                </ListItemText>
+                              </ListItemButton>
+                            </ListItem>
+                          </Grid>
+                        );
+                      })}
+                  </Grid>
+                </Box>
+              </Grid>
+              <Grid item xs="12">
+                <Box sx={{ margin: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs="12" margin={1}>
+                      <Typography> Albums:</Typography>
+                      {itemPageData !== 'null' &&
+                        itemPageData.albums.length === 0 &&
+                        [1].map(() => {
+                          return (
+                            <Typography variant="body2" noWrap>
+                              No Popular Song Data
+                            </Typography>
+                          );
+                        })}
+                    </Grid>
                     {itemPageData !== 'null' &&
                       itemPageData.inputObject.type === 'artist' &&
                       itemPageData.albums.map((Obj, index) => {
@@ -1034,7 +1087,7 @@ function App() {
                             key={Obj.guid + index}
                             margin={1}
                           >
-                            <Card sx={{ width: 240 }}>
+                            <Card sx={{ width: 165 }}>
                               <CardActionArea
                                 onClick={() => {
                                   OpenItem(Obj);
@@ -1043,8 +1096,61 @@ function App() {
                                 <CardMedia
                                   loading="lazy"
                                   component="img"
-                                  height="240"
-                                  sx={{ width: 240 }}
+                                  height="165"
+                                  sx={{ width: 165 }}
+                                  image={Obj.thumb || NoArt}
+                                  onError={({ currentTarget }) => {
+                                    currentTarget.onerror = null; // prevents looping
+                                    currentTarget.src = NoArt;
+                                  }}
+                                />
+                                <CardContent>
+                                  <Typography variant="h6" noWrap>
+                                    {Obj.title}
+                                  </Typography>
+                                  <Typography variant="p7" noWrap>
+                                    {Obj.parentTitle}
+                                  </Typography>
+                                </CardContent>
+                              </CardActionArea>
+                            </Card>
+                          </Grid>
+                        );
+                      })}
+                    <Grid item xs="12" margin={1}>
+                      <Typography> Related Artists:</Typography>
+                      {itemPageData !== 'null' &&
+                        itemPageData.relatedArtists.length === 0 &&
+                        [1].map(() => {
+                          return (
+                            <Typography variant="body2" noWrap>
+                              No Related Artists Data
+                            </Typography>
+                          );
+                        })}
+                    </Grid>
+
+                    {itemPageData !== 'null' &&
+                      itemPageData.inputObject.type === 'artist' &&
+                      itemPageData.relatedArtists.map((Obj, index) => {
+                        return (
+                          <Grid
+                            item
+                            xs="auto"
+                            key={Obj.guid + index}
+                            margin={1}
+                          >
+                            <Card sx={{ width: 165 }}>
+                              <CardActionArea
+                                onClick={() => {
+                                  OpenItem(Obj);
+                                }}
+                              >
+                                <CardMedia
+                                  loading="lazy"
+                                  component="img"
+                                  height="165"
+                                  sx={{ width: 165 }}
                                   image={Obj.thumb || NoArt}
                                   onError={({ currentTarget }) => {
                                     currentTarget.onerror = null; // prevents looping
@@ -1065,26 +1171,6 @@ function App() {
                         );
                       })}
                   </Grid>
-                </Box>
-              </Grid>
-              <Grid item xs="auto">
-                <Box sx={{ margin: '2', flexGrow: 1 }}>
-                  <Stack margin={4} spacing={1}>
-                    {itemPageData !== 'null' &&
-                      itemPageData.inputObject.type === 'artist' &&
-                      itemPageData.songs.map((Obj) => {
-                        return (
-                          <Card>
-                            <CardContent>
-                              <Typography variant="h6">{Obj.title}</Typography>
-                              <Typography variant="body2">
-                                {Obj.parentTitle}
-                              </Typography>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                  </Stack>
                 </Box>
               </Grid>
             </Grid>
