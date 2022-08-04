@@ -108,10 +108,7 @@ function App() {
 
   const loadedSession = LoadPlexSession();
   console.log(loadedSession);
-  if (
-    loadedSession.plexClientInformation === null ||
-    loadedSession.plexClientInformation === undefined
-  ) {
+  if (loadedSession.plexClientInformation == null) {
     loadedSession.plexClientInformation = CreatePlexClientInformation();
   }
 
